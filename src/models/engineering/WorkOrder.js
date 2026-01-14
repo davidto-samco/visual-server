@@ -13,10 +13,18 @@ const STATUS_MAP = {
  * @returns {string} Formatted ID like "8113-SUB/00" or "8113/00"
  */
 function formatWorkOrderId(wo) {
-  if (wo.subId && wo.subId.trim() !== "" && wo.subId !== "0") {
-    return `${wo.baseId}-${wo.subId}/${wo.lotId}`;
+  const base = wo.baseId;
+  const hasLot = wo.lotId && wo.lotId.trim() !== "" && wo.lotId !== "0";
+  const hasSub = wo.subId && wo.subId.trim() !== "" && wo.subId !== "0";
+
+  if (hasSub && hasLot) {
+    return `${base}-${wo.subId}/${wo.lotId}`;
+  } else if (hasLot) {
+    return `${base}/${wo.lotId}`;
+  } else if (hasSub) {
+    return `${base}-${wo.subId}`;
   }
-  return `${wo.baseId}/${wo.lotId}`;
+  return base;
 }
 
 /**

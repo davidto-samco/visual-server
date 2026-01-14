@@ -81,25 +81,29 @@ async function getWhereUsed(partId, limit, offset) {
     .input("limit", sql.Int, limit)
     .input("offset", sql.Int, offset).query(`
       SELECT
-        wo.PART_ID AS manufacturedPartId,
-        p.DESCRIPTION AS manufacturedPartDescription,
-        wo.BASE_ID AS workOrderMaster,
-        wo.LOT_ID AS workOrderLotId,
-        wo.SUB_ID AS workOrderSubId,
-        wo.TYPE AS workOrderType,
-        r.OPERATION_SEQ_NO AS seqNo,
-        ISNULL(r.PIECE_NO, 0) AS pieceNo,
-        ISNULL(r.QTY_PER, 0) AS qtyPer,
-        ISNULL(r.FIXED_QTY, 0) AS fixedQty,
-        ISNULL(r.SCRAP_PERCENT, 0) AS scrapPercent
+          wo.TYPE AS workOrderType,
+          wo.BASE_ID AS baseId,
+          wo.LOT_ID AS lotId,
+          wo.SUB_ID AS subId,
+          CASE WHEN wo.TYPE = 'M' THEN wo.BASE_ID END AS manufacturedPartId,
+          CASE WHEN wo.TYPE = 'M' THEN mfg.DESCRIPTION END AS manufacturedPartDescription,
+          r.OPERATION_SEQ_NO AS seqNo,
+          ISNULL(r.PIECE_NO, 0) AS pieceNo,
+          ISNULL(r.QTY_PER, 0) AS qtyPer,
+          ISNULL(r.SCRAP_PERCENT, 0) AS scrapPercent,
+          ISNULL(r.FIXED_QTY, 0) AS fixedQty,
+          comp.STOCK_UM AS unitOfMeasure
       FROM REQUIREMENT r WITH (NOLOCK)
       INNER JOIN WORK_ORDER wo WITH (NOLOCK) 
-        ON r.WORKORDER_BASE_ID = wo.BASE_ID
-        AND r.WORKORDER_LOT_ID = wo.LOT_ID
-        AND r.WORKORDER_SUB_ID = wo.SUB_ID
-      LEFT JOIN PART p WITH (NOLOCK) ON wo.PART_ID = p.ID
+          ON r.WORKORDER_TYPE = wo.TYPE
+          AND r.WORKORDER_BASE_ID = wo.BASE_ID
+          AND r.WORKORDER_LOT_ID = wo.LOT_ID
+          AND r.WORKORDER_SPLIT_ID = wo.SPLIT_ID
+          AND r.WORKORDER_SUB_ID = wo.SUB_ID
+      LEFT JOIN PART mfg WITH (NOLOCK) ON wo.TYPE = 'M' AND wo.BASE_ID = mfg.ID
+      LEFT JOIN PART comp WITH (NOLOCK) ON r.PART_ID = comp.ID
       WHERE r.PART_ID = @partId
-      ORDER BY wo.BASE_ID, r.OPERATION_SEQ_NO
+      ORDER BY wo.TYPE, wo.BASE_ID, r.OPERATION_SEQ_NO
       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
     `);
   return result.recordset;
@@ -120,9 +124,9 @@ async function getExtendedDescription(partId) {
   const pool = await getPool();
   const result = await pool.request().input("partId", sql.VarChar, partId)
     .query(`
-      SELECT CAST(CAST(BITS AS VARBINARY(MAX)) AS VARCHAR(MAX)) AS extendedDescription
+      SELECT CONVERT(VARCHAR(MAX), CAST(BITS AS VARBINARY(MAX))) AS extendedDescription
       FROM PART_BINARY WITH (NOLOCK)
-      WHERE PART_ID = @partId AND RTRIM(TYPE) = 'D'
+      WHERE PART_ID = @partId AND TYPE = 'D'
     `);
   return result.recordset.length > 0
     ? result.recordset[0].extendedDescription
