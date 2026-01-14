@@ -1,0 +1,43 @@
+{
+  "name": "visual-server",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000v\u0000i\u0000s\u0000u\u0000a\u0000l\u0000-\u0000s\u0000e\u0000r\u0000v\u0000e\u0000r\u0000\r\u0000 \u0000",
+  "homepage": "https://github.com/davidto-samco/visual-server#readme",
+  "bugs": {
+    "url": "https://github.com/davidto-samco/visual-server/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davidto-samco/visual-server.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .js",
+    "lint:fix": "eslint src --ext .js --fix",
+    "db:test": "node scripts/db-test-connection.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
+    "mssql": "^12.2.0",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
+  }
+}
