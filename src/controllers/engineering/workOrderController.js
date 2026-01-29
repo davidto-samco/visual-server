@@ -4,9 +4,10 @@ async function search(req, res, next) {
   try {
     const result = await workOrderService.searchWorkOrders(
       req.query.baseId,
-      Number(req.query.limit) || 1000
+      req.query.page,
+      req.query.limit
     );
-    res.json({ success: true, data: result, meta: { count: result.length } });
+    res.json({ success: true, data: result.results, meta: result.meta });
   } catch (error) {
     next(error);
   }

@@ -1,24 +1,51 @@
 const { getPool, sql } = require("../../database");
 
-async function search(baseIdPattern, limit = 100) {
+async function search(baseIdPattern, limit = 50, offset = 0) {
   const pool = await getPool();
   const result = await pool
     .request()
     .input("pattern", sql.VarChar, `${baseIdPattern}%`)
-    .input("limit", sql.Int, limit).query(`
-      SELECT TOP (@limit)
+    .input("limit", sql.Int, limit)
+    .input("offset", sql.Int, offset).query(`
+      SELECT
         wo.BASE_ID AS baseId, wo.LOT_ID AS lotId, wo.SUB_ID AS subId,
         wo.PART_ID AS partId, p.DESCRIPTION AS partDescription,
-        ISNULL(wo.DESIRED_QTY, 0) AS orderQty, wo.TYPE AS type, wo.STATUS AS status,
-        wo.SCHED_START_DATE AS startDate, wo.CLOSE_DATE AS closeDate,
-        wo.CREATE_DATE AS createdDate
+        ISNULL(wo.DESIRED_QTY, 0) AS orderQty, wo.STATUS AS status,
+        wo.CLOSE_DATE AS closeDate,
+        wo.CREATE_DATE AS createdDate,
+        wo.ACT_BURDEN_COST AS actBurdenCost,
+        wo.ACT_LABOR_COST AS actLaborCost,
+        wo.ACT_MATERIAL_COST AS actMaterialCost,
+        wo.ACT_SERVICE_COST AS actServiceCost,
+        c.NAME AS customerName
       FROM WORK_ORDER wo WITH (NOLOCK)
-      LEFT JOIN PART p WITH (NOLOCK) ON wo.PART_ID = p.ID
+      LEFT JOIN PART p WITH (NOLOCK)
+        ON wo.PART_ID = p.ID
+      LEFT JOIN DEMAND_SUPPLY_LINK dsl
+        ON wo.BASE_ID = dsl.SUPPLY_BASE_ID
+        AND wo.LOT_ID = dsl.SUPPLY_LOT_ID
+        AND wo.SUB_ID = dsl.SUPPLY_SUB_ID
+      LEFT JOIN CUSTOMER_ORDER co
+        ON dsl.DEMAND_BASE_ID = co.ID
+      LEFT JOIN CUSTOMER c
+        ON co.CUSTOMER_ID = c.ID
       WHERE wo.BASE_ID LIKE @pattern
         AND wo.SUB_ID = '0'
-      ORDER BY wo.CREATE_DATE DESC
+      ORDER BY wo.BASE_ID
+      OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
     `);
   return result.recordset;
+}
+
+async function countByBaseId(baseIdPattern) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("pattern", sql.VarChar, `${baseIdPattern}%`)
+    .query(
+      "SELECT COUNT(*) AS total FROM WORK_ORDER WITH (NOLOCK) WHERE BASE_ID LIKE @pattern AND SUB_ID = '0'",
+    );
+  return result.recordset[0].total;
 }
 
 async function findByCompositeKey(baseId, lotId, subId) {
@@ -178,6 +205,7 @@ async function getWipBalance(baseId, lotId, subId) {
 
 module.exports = {
   search,
+  countByBaseId,
   findByCompositeKey,
   getAggregateCounts,
   getOperations,

@@ -15,6 +15,9 @@ async function findById(partId) {
                 WHEN p.PURCHASED = 'Y' THEN 'Purchased'
                 ELSE 'Other'
             END AS partType,
+            p.COMMODITY_CODE as commodityCode,
+            p.DRAWING_ID AS drawingNumber,
+            p.DRAWING_REV_NO AS drawingRevision,
             ISNULL(p.UNIT_MATERIAL_COST, 0) AS unitMaterialCost,
             ISNULL(p.UNIT_LABOR_COST, 0) AS unitLaborCost,
             ISNULL(p.UNIT_BURDEN_COST, 0) AS unitBurdenCost,
@@ -68,7 +71,7 @@ async function countByPartNumber(partNumber) {
     .request()
     .input("partNumber", sql.VarChar, `${partNumber}%`)
     .query(
-      "SELECT COUNT(*) AS total FROM PART WITH (NOLOCK) WHERE ID LIKE @partNumber"
+      "SELECT COUNT(*) AS total FROM PART WITH (NOLOCK) WHERE ID LIKE @partNumber",
     );
   return result.recordset[0].total;
 }
@@ -115,7 +118,7 @@ async function countWhereUsed(partId) {
     .request()
     .input("partId", sql.VarChar, partId)
     .query(
-      "SELECT COUNT(*) AS total FROM REQUIREMENT WITH (NOLOCK) WHERE PART_ID = @partId"
+      "SELECT COUNT(*) AS total FROM REQUIREMENT WITH (NOLOCK) WHERE PART_ID = @partId",
     );
   return result.recordset[0].total;
 }

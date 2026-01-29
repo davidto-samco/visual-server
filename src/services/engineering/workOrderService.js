@@ -1,6 +1,11 @@
 const workOrderRepository = require("../../repositories/engineering/workOrderRepository");
 const { ValidationError, NotFoundError } = require("../../utils/errors");
-const { validateRequired } = require("../../utils/validation");
+const {
+  validateRequired,
+  validatePagination,
+  calculateOffset,
+  calculateTotalPages,
+} = require("../../utils/validation");
 const { formatWorkOrder } = require("../../models/engineering/WorkOrder");
 const { formatOperation } = require("../../models/engineering/Operation");
 const { formatRequirement } = require("../../models/engineering/Requirement");
@@ -9,14 +14,30 @@ function normalizeSubId(subId) {
   return subId === "-" ? "" : subId || "";
 }
 
-async function searchWorkOrders(baseIdPattern, limit = 1000) {
+async function searchWorkOrders(baseIdPattern, page, limit) {
   const pattern = validateRequired(
     baseIdPattern,
-    "BASE_ID pattern"
+    "BASE_ID pattern",
   ).toUpperCase();
-  const validLimit = Math.min(1000, Math.max(1, limit));
-  const workOrders = await workOrderRepository.search(pattern, validLimit);
-  return workOrders.map(formatWorkOrder);
+  const pagination = validatePagination(page, limit);
+
+  const total = await workOrderRepository.countByBaseId(pattern);
+  const offset = calculateOffset(pagination.page, pagination.limit);
+  const workOrders = await workOrderRepository.search(
+    pattern,
+    pagination.limit,
+    offset
+  );
+
+  return {
+    results: workOrders.map(formatWorkOrder),
+    meta: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: calculateTotalPages(total, pagination.limit),
+    },
+  };
 }
 
 async function getWorkOrderHeader(baseId, lotId, subId) {
@@ -37,7 +58,7 @@ async function getOperations(baseId, lotId, subId) {
   const operations = await workOrderRepository.getOperations(
     baseId,
     lotId,
-    normalizeSubId(subId)
+    normalizeSubId(subId),
   );
   return operations.map(formatOperation);
 }
@@ -51,7 +72,7 @@ async function getRequirements(baseId, lotId, subId, operationSeq) {
     baseId,
     lotId,
     normalizeSubId(subId),
-    operationSeq
+    operationSeq,
   );
   return requirements.map(formatRequirement);
 }
@@ -61,7 +82,7 @@ async function getSubWorkOrders(baseId, lotId) {
   validateRequired(lotId, "LOT_ID");
   const subWorkOrders = await workOrderRepository.getSubWorkOrders(
     baseId,
-    lotId
+    lotId,
   );
   return subWorkOrders.map(formatWorkOrder);
 }
@@ -72,7 +93,7 @@ async function getWipBalance(baseId, lotId, subId) {
   return workOrderRepository.getWipBalance(
     baseId,
     lotId,
-    normalizeSubId(subId)
+    normalizeSubId(subId),
   );
 }
 
