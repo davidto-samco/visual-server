@@ -3,6 +3,14 @@ const router = express.Router();
 const workOrderController = require("../controllers/engineering/workOrderController");
 
 router.get("/work-orders/search", workOrderController.search);
+router.get(
+  "/work-orders/:baseId/:lotId/tree/simplified",
+  workOrderController.getSimplifiedTree,
+);
+router.get(
+  "/work-orders/:baseId/:lotId/tree/detailed",
+  workOrderController.getDetailedTree,
+);
 router.get("/work-orders/:baseId/:lotId/:subId", workOrderController.getHeader);
 router.get(
   "/work-orders/:baseId/:lotId/:subId/operations",

@@ -1,11 +1,12 @@
 const workOrderService = require("../../services/engineering/workOrderService");
+const workOrderTreeService = require("../../services/engineering/workOrderTreeService");
 
 async function search(req, res, next) {
   try {
     const result = await workOrderService.searchWorkOrders(
       req.query.baseId,
       req.query.page,
-      req.query.limit
+      req.query.limit,
     );
     res.json({ success: true, data: result.results, meta: result.meta });
   } catch (error) {
@@ -19,7 +20,7 @@ async function getHeader(req, res, next) {
     const result = await workOrderService.getWorkOrderHeader(
       baseId,
       lotId,
-      subId
+      subId,
     );
     res.json({ success: true, data: result });
   } catch (error) {
@@ -44,7 +45,7 @@ async function getRequirements(req, res, next) {
       baseId,
       lotId,
       subId,
-      Number(sequence)
+      Number(sequence),
     );
     res.json({ success: true, data: result });
   } catch (error) {
@@ -72,6 +73,26 @@ async function getWipBalance(req, res, next) {
   }
 }
 
+async function getSimplifiedTree(req, res, next) {
+  try {
+    const { baseId, lotId } = req.params;
+    const result = await workOrderTreeService.getSimplifiedTree(baseId, lotId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getDetailedTree(req, res, next) {
+  try {
+    const { baseId, lotId } = req.params;
+    const result = await workOrderTreeService.getDetailedTree(baseId, lotId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   search,
   getHeader,
@@ -79,4 +100,6 @@ module.exports = {
   getRequirements,
   getSubWorkOrders,
   getWipBalance,
+  getSimplifiedTree,
+  getDetailedTree,
 };
