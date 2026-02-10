@@ -1,14 +1,27 @@
-﻿# Visual Order Lookup API
+# Visual Order Lookup API
 
-A backend REST API server for managing and querying manufacturing/engineering order data. Built to provide lookup capabilities for work orders, operations, requirements, and parts inventory from an internal management system.
+**Version:** 1.0.0
+**Last Updated:** 2026-02-10
+
+A backend REST API server for managing and querying manufacturing/engineering order data. Built to provide lookup capabilities for work orders, operations, requirements, and parts inventory.
 
 ## Technology Stack
 
-- **Runtime:** Node.js
+- **Runtime:** Node.js 18+
 - **Framework:** Express.js 5.x
-- **Database:** Microsoft SQL Server (mssql)
-- **Logging:** Winston
-- **Security:** Helmet, CORS
+- **Database:** Microsoft SQL Server (mssql v12)
+- **Logging:** Winston 3.x
+- **Security:** Helmet 8.x, CORS
+- **Testing:** Jest 30.x, Supertest
+
+## Features
+
+- Work order search and lookup with hierarchical tree views
+- Operations and requirements management
+- Parts inventory search and where-used tracking
+- WIP (work-in-progress) cost balance queries
+- Health monitoring with database connectivity checks
+- Structured logging and centralized error handling
 
 ## Project Structure
 
@@ -32,12 +45,14 @@ src/
 │       └── partController.js
 ├── services/
 │   ├── engineering/
-│   │   └── workOrderService.js
+│   │   ├── workOrderService.js
+│   │   └── workOrderTreeService.js
 │   └── inventory/
 │       └── partService.js
 ├── repositories/
 │   ├── engineering/
-│   │   └── workOrderRepository.js
+│   │   ├── workOrderRepository.js
+│   │   └── workOrderTreeRepository.js
 │   └── inventory/
 │       └── partRepository.js
 ├── models/
@@ -71,14 +86,16 @@ src/
 
 Base path: `/api/engineering/work-orders`
 
-| Method | Endpoint                                                               | Description                                         |
-| ------ | ---------------------------------------------------------------------- | --------------------------------------------------- |
-| GET    | `/work-orders?baseId=<pattern>&limit=<n>`                              | Search work orders by BASE_ID pattern               |
-| GET    | `/work-orders/:baseId/:lotId/:subId`                                   | Get work order header details with aggregate counts |
-| GET    | `/work-orders/:baseId/:lotId/:subId/operations`                        | Get all operations for a work order                 |
-| GET    | `/work-orders/:baseId/:lotId/:subId/operations/:sequence/requirements` | Get requirements for a specific operation           |
-| GET    | `/work-orders/:baseId/:lotId/:subId/sub-work-orders`                   | Get all sub-work orders                             |
-| GET    | `/work-orders/:baseId/:lotId/:subId/wip-balance`                       | Get work-in-progress cost balance                   |
+| Method | Endpoint                                                    | Description                                         |
+| ------ | ----------------------------------------------------------- | --------------------------------------------------- |
+| GET    | `/search?baseId=<pattern>&page=<n>&limit=<n>`               | Search work orders by BASE_ID pattern               |
+| GET    | `/:baseId/:lotId/:subId`                                    | Get work order header details with aggregate counts |
+| GET    | `/:baseId/:lotId/:subId/operations`                         | Get all operations for a work order                 |
+| GET    | `/:baseId/:lotId/:subId/operations/:sequence/requirements`  | Get requirements for a specific operation           |
+| GET    | `/:baseId/:lotId/:subId/sub-work-orders`                    | Get all sub-work orders                             |
+| GET    | `/:baseId/:lotId/:subId/wip-balance`                        | Get work-in-progress cost balance                   |
+| GET    | `/:baseId/:lotId/tree/simplified`                           | Get simplified hierarchical tree structure          |
+| GET    | `/:baseId/:lotId/tree/detailed`                             | Get detailed hierarchical tree with node types      |
 
 **Note:** Use `-` for empty `subId` values in path parameters.
 
@@ -86,12 +103,12 @@ Base path: `/api/engineering/work-orders`
 
 Base path: `/api/inventory/parts`
 
-| Method | Endpoint                                                | Description                             |
-| ------ | ------------------------------------------------------- | --------------------------------------- |
-| GET    | `/parts/search?partNumber=<pattern>&page=<n>&limit=<n>` | Search parts by part number             |
-| GET    | `/parts/:partId`                                        | Get detailed part information           |
-| GET    | `/parts/:partId/where-used?page=<n>&limit=<n>`          | Get work orders where this part is used |
-| GET    | `/parts/:partId/extended-description`                   | Get extended description for a part     |
+| Method | Endpoint                             | Description                             |
+| ------ | ------------------------------------ | --------------------------------------- |
+| GET    | `/search?partNumber=<pattern>`       | Search parts by part number             |
+| GET    | `/:partId`                           | Get detailed part information           |
+| GET    | `/:partId/where-used?page=&limit=`   | Get work orders where this part is used |
+| GET    | `/:partId/extended-description`      | Get extended description for a part     |
 
 ## Response Format
 
@@ -116,6 +133,16 @@ Base path: `/api/inventory/parts`
   }
 }
 ```
+
+**Error Codes:**
+
+| Code             | Status | Description              |
+| ---------------- | ------ | ------------------------ |
+| VALIDATION_ERROR | 400    | Invalid input            |
+| NOT_FOUND        | 404    | Resource not found       |
+| TIMEOUT          | 408    | Request timeout          |
+| INTERNAL_ERROR   | 500    | Unexpected server error  |
+| DATABASE_ERROR   | 503    | Database operation failed|
 
 ## Setup
 
@@ -175,27 +202,42 @@ npm run db:test
 
 ## Scripts
 
-| Script            | Description                           |
-| ----------------- | ------------------------------------- |
-| `npm start`       | Start production server               |
-| `npm run dev`     | Start development server with nodemon |
-| `npm test`        | Run tests with Jest                   |
-| `npm run lint`    | Run ESLint                            |
-| `npm run db:test` | Test database connection              |
+| Script                  | Description                           |
+| ----------------------- | ------------------------------------- |
+| `npm start`             | Start production server               |
+| `npm run dev`           | Start development server with nodemon |
+| `npm test`              | Run tests with Jest                   |
+| `npm run test:watch`    | Run tests in watch mode               |
+| `npm run test:coverage` | Run tests with coverage report        |
+| `npm run lint`          | Run ESLint                            |
+| `npm run lint:fix`      | Run ESLint with auto-fix              |
+| `npm run db:test`       | Test database connection              |
+
+## Architecture
+
+The API follows a layered architecture:
+
+1. **Controllers** - HTTP request/response handling
+2. **Services** - Business logic and validation
+3. **Repositories** - Database operations (Data Access Layer)
+4. **Models** - Data transformation and formatting
+5. **Middleware** - Request processing pipeline
 
 ## Database Tables
 
 The API queries the following main tables:
 
-- `WORK_ORDER` - Manufacturing work orders
-- `OPERATION` - Operations within work orders
-- `REQUIREMENT` - Materials required for operations
-- `PART` - Parts/inventory master data
-- `PART_BINARY` - Extended part descriptions
-- `WIP_BALANCE` - Work-in-progress cost tracking
-- `LABOR_TICKET` - Labor tracking
-- `INVENTORY_TRANS` - Inventory transactions
+| Table              | Description                        |
+| ------------------ | ---------------------------------- |
+| `WORK_ORDER`       | Manufacturing work orders          |
+| `OPERATION`        | Operations within work orders      |
+| `REQUIREMENT`      | Materials required for operations  |
+| `PART`             | Parts/inventory master data        |
+| `PART_BINARY`      | Extended part descriptions         |
+| `WIP_BALANCE`      | Work-in-progress cost tracking     |
+| `LABOR_TICKET`     | Labor tracking                     |
+| `INVENTORY_TRANS`  | Inventory transactions             |
 
 ## License
 
-ISC
+Proprietary - Samco Machinery
