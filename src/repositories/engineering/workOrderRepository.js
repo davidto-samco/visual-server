@@ -1,4 +1,5 @@
 const { getPool, sql } = require("../../database");
+const logger = require("../../utils/logger");
 
 async function search(baseIdPattern, limit = 50, offset = 0) {
   const pool = await getPool();
@@ -161,7 +162,6 @@ async function getRequirements(baseId, lotId, subId, operationSeq) {
   return result.recordset;
 }
 
-// src/repositories/engineering/workOrderRepository.js
 async function getSubWorkOrders(baseId, lotId) {
   const pool = await getPool();
   const startTime = Date.now();
@@ -194,7 +194,7 @@ async function getSubWorkOrders(baseId, lotId) {
 
   const query1Time = Date.now() - startTime;
 
-  // Query 2: NEW - Get relationships
+  // Query 2: Get relationships
   const relationshipsResult = await pool
     .request()
     .input("baseId", sql.VarChar, baseId)
@@ -211,35 +211,15 @@ async function getSubWorkOrders(baseId, lotId) {
     `);
 
   const totalTime = Date.now() - startTime;
-  console.log(
+  logger.debug(
     `getSubWorkOrders queries: Q1=${query1Time}ms, Total=${totalTime}ms`,
   );
 
   return {
     workOrders: workOrdersResult.recordset,
     relationships: relationshipsResult.recordset,
-  }; // Returns object instead of array
+  };
 }
-// async function getSubWorkOrders(baseId, lotId) {
-//   const pool = await getPool();
-//   const result = await pool
-//     .request()
-//     .input("baseId", sql.VarChar, baseId)
-//     .input("lotId", sql.VarChar, lotId).query(`
-//       SELECT
-//         wo.BASE_ID AS baseId, wo.LOT_ID AS lotId, wo.SUB_ID AS subId,
-//         wo.PART_ID AS partId, p.DESCRIPTION AS partDescription,
-//         ISNULL(wo.DESIRED_QTY, 0) AS orderQty, wo.TYPE AS type, wo.STATUS AS status,
-//         wo.SCHED_START_DATE AS startDate, wo.SCHED_FINISH_DATE AS finishDate,
-//         wo.CLOSE_DATE AS closeDate
-//       FROM WORK_ORDER wo WITH (NOLOCK)
-//       LEFT JOIN PART p WITH (NOLOCK) ON wo.PART_ID = p.ID
-//       WHERE wo.BASE_ID = @baseId AND wo.LOT_ID = @lotId
-//         AND wo.SUB_ID != '' AND wo.SUB_ID != '0'
-//       ORDER BY TRY_CAST(wo.SUB_ID AS INT), wo.SUB_ID
-//     `);
-//   return result.recordset;
-// }
 
 async function getWipBalance(baseId, lotId, subId) {
   const pool = await getPool();

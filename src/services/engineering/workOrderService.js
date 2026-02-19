@@ -1,4 +1,5 @@
 const workOrderRepository = require("../../repositories/engineering/workOrderRepository");
+const logger = require("../../utils/logger");
 const { ValidationError, NotFoundError } = require("../../utils/errors");
 const {
   validateRequired,
@@ -117,7 +118,7 @@ async function getSubWorkOrders(baseId, lotId, maxDepth = 10) {
     }
 
     if (visited.has(subId)) {
-      console.warn(`Circular reference detected: ${subId}`);
+      logger.warn(`Circular reference detected: ${subId}`);
       return { depth: 999, path: "CIRCULAR" };
     }
 
@@ -139,7 +140,7 @@ async function getSubWorkOrders(baseId, lotId, maxDepth = 10) {
     const path = `${parentHierarchy.path} -> ${baseId}/${lotId}/${subId}`;
 
     if (depth > maxDepth) {
-      console.warn(`Max depth ${maxDepth} exceeded for ${subId}`);
+      logger.warn(`Max depth ${maxDepth} exceeded for ${subId}`);
       return { depth: maxDepth, path };
     }
 
@@ -170,22 +171,12 @@ async function getSubWorkOrders(baseId, lotId, maxDepth = 10) {
   const totalTime = Date.now() - startTime;
   const calcTime = totalTime - fetchTime;
 
-  console.log(
+  logger.debug(
     `getSubWorkOrders completed: fetch=${fetchTime}ms, calc=${calcTime}ms, total=${totalTime}ms, count=${sorted.length}`,
   );
 
   return sorted;
 }
-
-// async function getSubWorkOrders(baseId, lotId) {
-//   validateRequired(baseId, "BASE_ID");
-//   validateRequired(lotId, "LOT_ID");
-//   const subWorkOrders = await workOrderRepository.getSubWorkOrders(
-//     baseId,
-//     lotId,
-//   );
-//   return subWorkOrders.map(formatWorkOrder);
-// }
 
 async function getWipBalance(baseId, lotId, subId) {
   validateRequired(baseId, "BASE_ID");

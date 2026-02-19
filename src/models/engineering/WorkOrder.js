@@ -27,21 +27,11 @@ function formatWorkOrderId(wo) {
   return base;
 }
 
-/**
- * Format work order status for display
- * @param {string} status - Status string
- * @returns {string} Formatted status like "[C]" for Closed
- */
 function formatWorkOrderStatus(status) {
   const mapped = STATUS_MAP[status];
   return mapped ? mapped.display : `[${status || "U"}]`;
 }
 
-/**
- * Format work order with display values
- * @param {Object} wo - Work order from database
- * @returns {Object} Work order with formatted fields
- */
 function formatWorkOrder(wo) {
   return {
     ...wo,

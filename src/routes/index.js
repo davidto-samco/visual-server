@@ -3,10 +3,12 @@ const router = express.Router();
 const healthController = require("../controllers/healthController");
 const inventoryRouter = require("./inventory.routes");
 const engineeringRouter = require("./engineering.routes");
+const salesRouter = require("./sales.routes");
 
 router.get("/health", healthController.getHealth);
 router.get("/health/db", healthController.getDatabaseHealth);
 router.use("/inventory", inventoryRouter);
 router.use("/engineering", engineeringRouter);
+router.use("/sales", salesRouter);
 
 module.exports = router;

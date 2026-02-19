@@ -22,6 +22,7 @@ async function searchPart(partNumber, page, limit) {
   return {
     results,
     meta: {
+      total,
       page: pagination.page,
       limit: pagination.limit,
       totalPages: calculateTotalPages(total, pagination.limit),

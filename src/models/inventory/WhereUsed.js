@@ -1,11 +1,5 @@
 const { formatWorkOrderId } = require("../engineering/WorkOrder");
 
-/**
- * Format where-used record for display
- * Reuses formatWorkOrderId from WorkOrder model
- * @param {Object} record - Where-used record from database
- * @returns {Object} Record with formatted fields
- */
 function formatWhereUsed(record) {
   const formatted = formatWorkOrderId(record);
   return {

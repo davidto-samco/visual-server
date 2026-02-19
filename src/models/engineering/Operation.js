@@ -1,8 +1,3 @@
-/**
- * Format operation for display
- * @param {Object} op - Operation from database
- * @returns {Object} Operation with formatted fields
- */
 function formatOperation(op) {
   return {
     ...op,

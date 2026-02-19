@@ -46,9 +46,19 @@ function calculateTotalPages(total, limit) {
   return Math.ceil(total / limit);
 }
 
+function validateDate(dateStr, fieldName) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    throw new ValidationError(`${fieldName} must be a valid date (YYYY-MM-DD)`);
+  }
+  return date;
+}
+
 module.exports = {
   validateRequired,
   validatePagination,
+  validateDate,
   calculateOffset,
   calculateTotalPages,
 };

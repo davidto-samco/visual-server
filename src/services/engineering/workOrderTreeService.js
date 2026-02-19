@@ -1,11 +1,7 @@
 const workOrderTreeRepository = require("../../repositories/engineering/workOrderTreeRepository");
-const { ValidationError } = require("../../utils/errors");
 const { validateRequired } = require("../../utils/validation");
 const { formatWorkOrderStatus } = require("../../models/engineering/WorkOrder");
 
-/**
- * Format a simplified tree node for API response
- */
 function formatSimplifiedNode(node, baseId, lotId) {
   const hasSub = node.subId && node.subId !== "0";
   const formattedId = hasSub
@@ -27,9 +23,6 @@ function formatSimplifiedNode(node, baseId, lotId) {
   };
 }
 
-/**
- * Format a detailed tree node for API response
- */
 function formatDetailedNode(node, baseId, lotId) {
   const base = {
     nodeType: node.nodeType,
@@ -205,9 +198,6 @@ function buildDetailedTree(flatNodes) {
   return woMap.get("0") || null;
 }
 
-/**
- * Get simplified work order tree (WO hierarchy only)
- */
 async function getSimplifiedTree(baseId, lotId) {
   const b = validateRequired(baseId, "BASE_ID");
   const l = validateRequired(lotId, "LOT_ID");
@@ -232,9 +222,6 @@ async function getSimplifiedTree(baseId, lotId) {
   };
 }
 
-/**
- * Get detailed work order tree (WOs + operations + materials)
- */
 async function getDetailedTree(baseId, lotId) {
   const b = validateRequired(baseId, "BASE_ID");
   const l = validateRequired(lotId, "LOT_ID");

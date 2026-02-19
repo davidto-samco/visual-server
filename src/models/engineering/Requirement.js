@@ -1,8 +1,3 @@
-/**
- * Format requirement for display
- * @param {Object} req - Requirement from database
- * @returns {Object} Requirement with formatted fields
- */
 function formatRequirement(req) {
   return {
     ...req,
@@ -15,8 +10,4 @@ function formatRequirement(req) {
   };
 }
 
-function hasSubordinateWorkOrder(req) {
-  return req.subordWoSubId != null && req.subordWoSubId.trim() !== "";
-}
-
-module.exports = { formatRequirement, hasSubordinateWorkOrder };
+module.exports = { formatRequirement };
