@@ -14,12 +14,6 @@ const {
 } = require("../../models/sales/Order");
 const logger = require("../../utils/logger");
 
-/**
- * Get recent orders (default view)
- *
- * @param {number} [limit=100] - Maximum results
- * @returns {Promise<Array>} Order summaries
- */
 async function getRecentOrders(limit = 100) {
   const validLimit = Math.min(1000, Math.max(1, parseInt(limit) || 100));
 
@@ -29,17 +23,6 @@ async function getRecentOrders(limit = 100) {
   return orders.map(formatOrderSummary);
 }
 
-/**
- * Search orders with combined filters (customer name + date range)
- *
- * @param {Object} filters - Search filters
- * @param {string} [filters.customerName] - Customer name pattern
- * @param {string} [filters.startDate] - Start date (YYYY-MM-DD)
- * @param {string} [filters.endDate] - End date (YYYY-MM-DD)
- * @param {number} [page=1] - Page number
- * @param {number} [limit=100] - Results per page
- * @returns {Promise<{records: Array, meta: Object}>}
- */
 async function searchOrders(filters, page, limit) {
   const pagination = validatePagination(page, limit);
 
@@ -94,13 +77,6 @@ async function searchOrders(filters, page, limit) {
   };
 }
 
-/**
- * Get complete order by job number for acknowledgement display
- *
- * @param {string} jobNumber - Job number / Order ID
- * @returns {Promise<Object>} Complete order with line items
- * @throws {NotFoundError} If order not found
- */
 async function getOrderByJobNumber(jobNumber) {
   const validatedJobNumber = validateRequired(jobNumber, "Job number");
   const normalizedJobNumber = validatedJobNumber.toUpperCase();
@@ -122,14 +98,6 @@ async function getOrderByJobNumber(jobNumber) {
   return formatOrderAcknowledgement(order, lineItems);
 }
 
-/**
- * Get line items for an order (for lazy loading)
- *
- * @param {string} jobNumber - Job number / Order ID
- * @param {number} [page=1] - Page number
- * @param {number} [limit=50] - Results per page
- * @returns {Promise<{records: Array, meta: Object}>}
- */
 async function getOrderLineItems(jobNumber, page, limit) {
   const validatedJobNumber = validateRequired(jobNumber, "Job number");
   const normalizedJobNumber = validatedJobNumber.toUpperCase();
@@ -169,13 +137,6 @@ async function getOrderLineItems(jobNumber, page, limit) {
   };
 }
 
-/**
- * Get extended description for an order line item
- *
- * @param {string} jobNumber - Job number / Order ID
- * @param {number} lineNumber - Line item number
- * @returns {Promise<string|null>} Extended description or null
- */
 async function getLineExtendedDescription(jobNumber, lineNumber) {
   const validatedJobNumber = validateRequired(jobNumber, "Job number");
   const normalizedJobNumber = validatedJobNumber.toUpperCase();

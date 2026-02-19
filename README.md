@@ -1,7 +1,7 @@
 # Visual Order Lookup API
 
-**Version:** 1.0.0
-**Last Updated:** 2026-02-10
+**Version:** 1.1.0
+**Last Updated:** 2026-02-19
 
 A backend REST API server for managing and querying manufacturing/engineering order data. Built to provide lookup capabilities for work orders, operations, requirements, and parts inventory.
 
@@ -19,6 +19,7 @@ A backend REST API server for managing and querying manufacturing/engineering or
 - Work order search and lookup with hierarchical tree views
 - Operations and requirements management
 - Parts inventory search and where-used tracking
+- Sales order search, filtering, and acknowledgement display
 - WIP (work-in-progress) cost balance queries
 - Health monitoring with database connectivity checks
 - Structured logging and centralized error handling
@@ -36,32 +37,41 @@ src/
 ├── routes/
 │   ├── index.js                # Main router
 │   ├── engineering.routes.js   # Work order routes
-│   └── inventory.routes.js     # Parts/inventory routes
+│   ├── inventory.routes.js     # Parts/inventory routes
+│   └── sales.routes.js         # Sales order routes
 ├── controllers/
 │   ├── healthController.js     # Health check endpoints
 │   ├── engineering/
 │   │   └── workOrderController.js
-│   └── inventory/
-│       └── partController.js
+│   ├── inventory/
+│   │   └── partController.js
+│   └── sales/
+│       └── orderController.js
 ├── services/
 │   ├── engineering/
 │   │   ├── workOrderService.js
 │   │   └── workOrderTreeService.js
-│   └── inventory/
-│       └── partService.js
+│   ├── inventory/
+│   │   └── partService.js
+│   └── sales/
+│       └── orderService.js
 ├── repositories/
 │   ├── engineering/
 │   │   ├── workOrderRepository.js
 │   │   └── workOrderTreeRepository.js
-│   └── inventory/
-│       └── partRepository.js
+│   ├── inventory/
+│   │   └── partRepository.js
+│   └── sales/
+│       └── orderRepository.js
 ├── models/
 │   ├── engineering/
 │   │   ├── WorkOrder.js
 │   │   ├── Operation.js
 │   │   └── Requirement.js
-│   └── inventory/
-│       └── WhereUsed.js
+│   ├── inventory/
+│   │   └── WhereUsed.js
+│   └── sales/
+│       └── Order.js
 ├── middleware/
 │   ├── errorHandler.js
 │   ├── notFound.js
@@ -109,6 +119,17 @@ Base path: `/api/inventory/parts`
 | GET    | `/:partId`                           | Get detailed part information           |
 | GET    | `/:partId/where-used?page=&limit=`   | Get work orders where this part is used |
 | GET    | `/:partId/extended-description`      | Get extended description for a part     |
+
+### Sales - Orders
+
+Base path: `/api/sales/orders`
+
+| Method | Endpoint                                        | Description                                      |
+| ------ | ----------------------------------------------- | ------------------------------------------------ |
+| GET    | `/?customerName=&startDate=&endDate=&page=&limit=` | Search/filter orders or get recent orders     |
+| GET    | `/:jobNumber`                                   | Get order acknowledgement with customer details  |
+| GET    | `/:jobNumber/line-items?page=&limit=`           | Get paginated line items for an order            |
+| GET    | `/:jobNumber/line-items/:lineNumber/extended-description` | Get extended description for a line item |
 
 ## Response Format
 
@@ -237,6 +258,11 @@ The API queries the following main tables:
 | `WIP_BALANCE`      | Work-in-progress cost tracking     |
 | `LABOR_TICKET`     | Labor tracking                     |
 | `INVENTORY_TRANS`  | Inventory transactions             |
+| `CUSTOMER_ORDER`   | Sales/customer orders              |
+| `CUST_ORDER_LINE`  | Sales order line items             |
+| `CUST_LINE_BINARY` | Extended line item descriptions    |
+| `CUSTOMER`         | Customer master data               |
+| `SALES_REP`        | Sales representative data          |
 
 ## License
 

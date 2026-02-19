@@ -1,13 +1,6 @@
-// src/repositories/sales/orderRepository.js
-
 const { getPool, sql } = require("../../database");
+const logger = require("../../utils/logger");
 
-/**
- * Get recent orders (default view)
- *
- * @param {number} limit - Maximum results
- * @returns {Promise<Array>} Order summaries
- */
 async function getRecentOrders(limit = 100) {
   const pool = await getPool();
   const result = await pool.request().input("limit", sql.Int, limit).query(`
@@ -25,9 +18,6 @@ async function getRecentOrders(limit = 100) {
   return result.recordset;
 }
 
-/**
- * Search orders with combined filters
- */
 async function searchWithFilters(
   customerName,
   startDate,
@@ -79,9 +69,6 @@ async function searchWithFilters(
   return result.recordset;
 }
 
-/**
- * Count orders with combined filters
- */
 async function countWithFilters(customerName, startDate, endDate) {
   const pool = await getPool();
   const request = pool.request();
@@ -116,12 +103,6 @@ async function countWithFilters(customerName, startDate, endDate) {
   return result.recordset[0].total;
 }
 
-/**
- * Check if order exists
- *
- * @param {string} jobNumber - Job number
- * @returns {Promise<boolean>}
- */
 async function exists(jobNumber) {
   const pool = await getPool();
   const result = await pool.request().input("jobNumber", sql.VarChar, jobNumber)
@@ -134,12 +115,6 @@ async function exists(jobNumber) {
   return result.recordset.length > 0;
 }
 
-/**
- * Get complete order by job number with customer details
- *
- * @param {string} jobNumber - Job number / Order ID
- * @returns {Promise<Object|null>} Order header or null
- */
 async function findByJobNumber(jobNumber) {
   const pool = await getPool();
   const result = await pool.request().input("jobNumber", sql.VarChar, jobNumber)
@@ -187,16 +162,6 @@ async function findByJobNumber(jobNumber) {
   return result.recordset.length > 0 ? result.recordset[0] : null;
 }
 
-/**
- * Get order line items
- *
- * @param {string} orderId - Order ID
- * @returns {Promise<Array>} Line items
- */
-/**
- * Get order line items with LOT_ID from INVENTORY_TRANS mapping
- * Returns RAW data - formatting done in service/model layer
- */
 async function getOrderLineItems(orderId) {
   const pool = await getPool();
 
@@ -242,7 +207,7 @@ async function getOrderLineItems(orderId) {
       }
     }
   } catch (err) {
-    console.warn("Could not fetch LOT_ID mapping:", err.message);
+    logger.warn("Could not fetch LOT_ID mapping:", err.message);
   }
 
   // Step 2: Get line items
@@ -294,14 +259,6 @@ async function getOrderLineItems(orderId) {
   });
 }
 
-/**
- * Get order line items with pagination
- *
- * @param {string} orderId - Order ID
- * @param {number} limit - Results per page
- * @param {number} offset - Offset
- * @returns {Promise<Array>} Line items
- */
 async function getOrderLineItemsPaginated(orderId, limit = 50, offset = 0) {
   const pool = await getPool();
 
@@ -347,7 +304,7 @@ async function getOrderLineItemsPaginated(orderId, limit = 50, offset = 0) {
       }
     }
   } catch (err) {
-    console.warn("Could not fetch LOT_ID mapping:", err.message);
+    logger.warn("Could not fetch LOT_ID mapping:", err.message);
   }
 
   // Step 2: Get paginated line items
@@ -408,12 +365,6 @@ async function getOrderLineItemsPaginated(orderId, limit = 50, offset = 0) {
   });
 }
 
-/**
- * Count line items for an order
- *
- * @param {string} orderId - Order ID
- * @returns {Promise<number>} Count
- */
 async function countLineItems(orderId) {
   const pool = await getPool();
   const result = await pool.request().input("orderId", sql.VarChar, orderId)
@@ -426,13 +377,6 @@ async function countLineItems(orderId) {
   return result.recordset[0].total;
 }
 
-/**
- * Get extended description for order line item from binary table
- *
- * @param {string} orderId - Order ID
- * @param {number} lineNo - Line number
- * @returns {Promise<string|null>} Extended description or null
- */
 async function getLineExtendedDescription(orderId, lineNo) {
   const pool = await getPool();
   const result = await pool

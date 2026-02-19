@@ -1,8 +1,3 @@
-/**
- * Format order summary for list display
- * @param {Object} row - Database row
- * @returns {Object} Formatted order summary
- */
 function formatOrderSummary(row) {
   return {
     jobNumber: row.jobNumber?.trim() || "",
@@ -14,30 +9,18 @@ function formatOrderSummary(row) {
   };
 }
 
-/**
- * Format date as YYYY-MM-DD
- */
 function formatDate(date) {
   if (!date) return null;
   const d = new Date(date);
   return d.toISOString().split("T")[0];
 }
 
-/**
- * Format currency with symbol
- */
 function formatCurrency(amount, currency = "USD") {
   const value = parseFloat(amount) || 0;
   const symbol = currency === "USD" ? "$" : currency;
   return `${symbol}${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-/**
- * Format complete order for acknowledgement display
- * @param {Object} orderRow - Order header from database
- * @param {Array} lineItems - Line items array
- * @returns {Object} Formatted order acknowledgement
- */
 function formatOrderAcknowledgement(orderRow, lineItems) {
   return {
     orderId: orderRow.orderId?.trim() || "",
@@ -57,9 +40,6 @@ function formatOrderAcknowledgement(orderRow, lineItems) {
   };
 }
 
-/**
- * Format sales rep information
- */
 function formatSalesRep(row) {
   if (!row.salesRepId) return null;
   return {
@@ -68,9 +48,6 @@ function formatSalesRep(row) {
   };
 }
 
-/**
- * Format customer information with ship-to and bill-to addresses
- */
 function formatCustomer(row) {
   return {
     customerId: row.customerId?.trim() || "",
@@ -96,9 +73,6 @@ function formatCustomer(row) {
   };
 }
 
-/**
- * Format contact information
- */
 function formatContact(row) {
   const firstName = row.contactFirstName?.trim() || "";
   const lastName = row.contactLastName?.trim() || "";
@@ -113,11 +87,6 @@ function formatContact(row) {
   };
 }
 
-/**
- * Format order line item
- * @param {Object} row - Line item from database
- * @returns {Object} Formatted line item
- */
 function formatLineItem(row) {
   return {
     lineNumber: parseInt(row.lineNumber) || 0,
