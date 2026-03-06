@@ -33,51 +33,51 @@ function formatDetailedNode(node, baseId, lotId) {
   };
 
   switch (node.nodeType) {
-    case "WO": {
-      const hasSub = node.subId && node.subId !== "0";
-      return {
-        ...base,
-        partId: node.partId || null,
-        partDescription: node.partDescription || null,
-        orderQty: node.qty,
-        formattedId: hasSub
-          ? `${baseId}-${node.subId}/${lotId}`
-          : `${baseId}/${lotId}`,
-        startDate: node.startDate,
-        finishDate: node.finishDate,
-        // internal: used for nesting, stripped before response
-        _parentSubId: node.parentSubId || null,
-        _parentOpSeq: node.parentOpSeq || null,
-        children: [],
-      };
-    }
+  case "WO": {
+    const hasSub = node.subId && node.subId !== "0";
+    return {
+      ...base,
+      partId: node.partId || null,
+      partDescription: node.partDescription || null,
+      orderQty: node.qty,
+      formattedId: hasSub
+        ? `${baseId}-${node.subId}/${lotId}`
+        : `${baseId}/${lotId}`,
+      startDate: node.startDate,
+      finishDate: node.finishDate,
+      // internal: used for nesting, stripped before response
+      _parentSubId: node.parentSubId || null,
+      _parentOpSeq: node.parentOpSeq || null,
+      children: [],
+    };
+  }
 
-    case "OP":
-      return {
-        ...base,
-        opSeq: node.opSeq,
-        resourceId: node.resourceId,
-        resourceDescription: node.resourceDescription || null,
-        formattedDescription:
+  case "OP":
+    return {
+      ...base,
+      opSeq: node.opSeq,
+      resourceId: node.resourceId,
+      resourceDescription: node.resourceDescription || null,
+      formattedDescription:
           `${node.opSeq} ${node.resourceId || ""} [${node.resourceDescription || ""}]`.trim(),
-        children: [],
-      };
+      children: [],
+    };
 
-    case "MAT":
-      return {
-        ...base,
-        opSeq: node.opSeq,
-        pieceNo: node.pieceNo,
-        partId: node.partId || null,
-        partDescription: node.partDescription || null,
-        qty: node.qty,
-        dimensions: node.dimensions || null,
-        formattedPart: `${node.partId || ""} - ${node.partDescription || "Unknown"}`,
-        children: [],
-      };
+  case "MAT":
+    return {
+      ...base,
+      opSeq: node.opSeq,
+      pieceNo: node.pieceNo,
+      partId: node.partId || null,
+      partDescription: node.partDescription || null,
+      qty: node.qty,
+      dimensions: node.dimensions || null,
+      formattedPart: `${node.partId || ""} - ${node.partDescription || "Unknown"}`,
+      children: [],
+    };
 
-    default:
-      return { ...base, children: [] };
+  default:
+    return { ...base, children: [] };
   }
 }
 

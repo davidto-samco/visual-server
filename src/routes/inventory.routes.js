@@ -7,7 +7,7 @@ router.get("/parts/:partId", partController.getById);
 router.get("/parts/:partId/where-used", partController.getWhereUsed);
 router.get(
   "/parts/:partId/extended-description",
-  partController.getExtendedDescription
+  partController.getExtendedDescription,
 );
 
 module.exports = router;
