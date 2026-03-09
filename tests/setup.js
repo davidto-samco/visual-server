@@ -12,3 +12,16 @@ jest.mock("../src/utils/logger", () => ({
   warn: jest.fn(),
   debug: jest.fn(),
 }));
+
+// Add at the bottom of tests/setup.js
+jest.mock("../src/database/connection", () => ({
+  getPool: jest.fn(),
+  closePool: jest.fn(),
+  testConnection: jest.fn(),
+  sql: {
+    VarChar: "VarChar",
+    Int: "Int",
+    Bit: "Bit",
+    NVarChar: "NVarChar",
+  },
+}));

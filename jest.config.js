@@ -17,7 +17,7 @@ module.exports = {
   },
   coveragePathIgnorePatterns: [
     "/node_modules/",
-    "/src/repositories/", // Repositories require database for testing
+    //"/src/repositories/", // Repositories require database for testing
   ],
   setupFilesAfterEnv: ["<rootDir>/tests/setup.js"],
   verbose: true,
