@@ -1,0 +1,44 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PRODUCTION STACK  –  paste this into Portainer → Stacks → Add Stack
+#
+# Do NOT put real values here. Set every ${VAR} in Portainer's
+# "Environment variables" tab. They are stored in Portainer only,
+# never in source control.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  visual-server:
+    image: ghcr.io/davidto-samco/visual-server:latest
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: ${API_PREFIX}
+
+      # Database
+      DB_SERVER: ${DB_SERVER}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+      DB_ENCRYPT: ${DB_ENCRYPT}
+      DB_TRUST_SERVER_CERTIFICATE: ${DB_TRUST_SERVER_CERTIFICATE}
+      DB_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT}
+      DB_REQUEST_TIMEOUT: ${DB_REQUEST_TIMEOUT}
+      DB_POOL_MIN: ${DB_POOL_MIN}
+      DB_POOL_MAX: ${DB_POOL_MAX}
+
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL}
+
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
