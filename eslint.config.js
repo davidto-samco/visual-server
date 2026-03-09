@@ -15,12 +15,15 @@ module.exports = [
         process: "readonly",
         __dirname: "readonly",
         // env: jest
+        jest: "readonly",
         describe: "readonly",
         test: "readonly",
         expect: "readonly",
         it: "readonly",
         beforeEach: "readonly",
         afterEach: "readonly",
+        beforeAll: "readonly",
+        afterAll: "readonly",
       },
     },
     rules: {

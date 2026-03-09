@@ -27,13 +27,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
-    #   - name: Run tests
-    #     run: npm test -- --ci --coverage
-    #     env:
-    #       NODE_ENV: test
-    #       # Provide minimal env so dotenv doesn't crash in CI
-    #       DB_SERVER: localhost
-    #       DB_DATABASE: test
-    #       DB_USER: test
-    #       DB_PASSWORD: test
-    #       DB_PORT: 1433
+      - name: Run tests
+        run: npm test -- --ci --coverage
+        env:
+          NODE_ENV: test
+          # Provide minimal env so dotenv doesn't crash in CI
+          DB_SERVER: localhost
+          DB_DATABASE: test
+          DB_USER: test
+          DB_PASSWORD: test
+          DB_PORT: 1433
