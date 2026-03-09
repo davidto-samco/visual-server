@@ -1,0 +1,10 @@
+services:
+  visual-server:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src # live reload via nodemon if you swap CMD
+    restart: unless-stopped
