@@ -1,7 +1,7 @@
 # Visual Order Lookup API
 
-**Version:** 1.1.0
-**Last Updated:** 2026-02-19
+**Version:** 1.2.0
+**Last Updated:** 2026-03-10
 
 A backend REST API server for managing and querying manufacturing/engineering order data. Built to provide lookup capabilities for work orders, operations, requirements, and parts inventory.
 
@@ -27,6 +27,14 @@ A backend REST API server for managing and querying manufacturing/engineering or
 ## Project Structure
 
 ```
+visual-order-lookup-api/
+├── src/                        # Application source code
+├── tests/                      # Test suites (unit & integration)
+├── scripts/                    # Utility scripts
+├── jest.config.js              # Jest configuration
+├── eslint.config.js            # ESLint configuration
+└── package.json
+
 src/
 ├── index.js                    # Entry point
 ├── app.js                      # Express app setup & middleware
@@ -233,6 +241,75 @@ npm run db:test
 | `npm run lint`          | Run ESLint                            |
 | `npm run lint:fix`      | Run ESLint with auto-fix              |
 | `npm run db:test`       | Test database connection              |
+
+## Testing
+
+The project uses Jest for testing with a comprehensive test suite covering unit and integration tests.
+
+### Test Structure
+
+```
+tests/
+├── __mocks__/
+│   └── dbMock.js              # Database mock utilities
+├── setup.js                   # Jest setup configuration
+├── unit/
+│   ├── models/
+│   │   ├── WorkOrder.test.js
+│   │   ├── Operation.test.js
+│   │   └── Requirement.test.js
+│   ├── services/
+│   │   ├── workOrderService.test.js
+│   │   ├── workOrderTreeService.test.js
+│   │   ├── partService.test.js
+│   │   └── orderService.test.js
+│   ├── repositories/
+│   │   ├── workOrderRepository.test.js
+│   │   ├── workOrderTreeRepository.test.js
+│   │   ├── partRepository.test.js
+│   │   └── orderRepository.test.js
+│   └── utils/
+│       ├── validation.test.js
+│       └── errors.test.js
+└── integration/
+    ├── health.test.js
+    ├── engineering.test.js
+    ├── inventory.test.js
+    ├── sales.test.js
+    └── middleware.test.js
+```
+
+### Coverage Summary
+
+| Layer        | Files Tested | Coverage |
+|--------------|--------------|----------|
+| Repositories | 4/4          | 100%     |
+| Services     | 4/4          | 100%     |
+| Models       | 3/5          | 60%      |
+| Utils        | 2/4          | 50%      |
+| Middleware   | 2/3          | 67%      |
+| Routes       | 3/3          | 100% (integration) |
+
+**Total: 217 tests**
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage report
+npm run test:coverage
+
+# Run specific test file
+npm test -- tests/unit/services/orderService.test.js
+
+# Run tests matching pattern
+npm test -- tests/unit/services
+```
 
 ## Architecture
 
