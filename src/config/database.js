@@ -8,6 +8,9 @@ module.exports = {
     encrypt: process.env.DB_ENCRYPT === "true",
     trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE === "true",
     enableArithAbort: true,
+    cryptoCredentialsDetails: {
+      minVersion: "TLSv1", // allows older SQL Server TLS versions
+    },
   },
   pool: {
     min: parseInt(process.env.DB_POOL_MIN || "2"),
