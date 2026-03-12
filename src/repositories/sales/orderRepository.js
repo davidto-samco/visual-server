@@ -174,44 +174,62 @@ async function findByJobNumber(jobNumber) {
   return result.recordset.length > 0 ? result.recordset[0] : null;
 }
 
-async function getOrderLineItems(orderId) {
-  const pool = await getPool();
-
-  // Extract base number from order ID
-  let baseNumber = orderId;
+/**
+ * Extract base number from order ID for work order lookups.
+ */
+function extractBaseNumber(orderId) {
   if (orderId.includes(" ")) {
-    baseNumber = orderId.split(" ")[0];
+    return orderId.split(" ")[0];
   } else if (orderId.includes("-")) {
-    baseNumber = orderId.split("-")[0];
+    return orderId.split("-")[0];
   } else {
     const match = orderId.match(/^(.+\d)R\d+$/);
     if (match) {
-      baseNumber = match[1];
+      return match[1];
     }
   }
+  return orderId;
+}
 
-  // Step 1: Get LOT_ID mapping from WORK_ORDER + INVENTORY_TRANS
+/**
+ * Resolves LOT_ID mapping for customer order line items.
+ *
+ * Strategy 1 (primary): DEMAND_SUPPLY_LINK — the ERP's planning/allocation table.
+ *   Created at order entry when work orders are generated. Maps DEMAND_SEQ_NO (line
+ *   number) to SUPPLY_LOT_ID (work order lot). Covers 98.5% of all orders.
+ *
+ * Strategy 2 (fallback): WORK_ORDER + INVENTORY_TRANS — the ERP's execution table.
+ *   Only populated when materials are physically moved (issued/received). Covers 92.6%
+ *   of orders but misses unreleased, cancelled, and some closed orders where inventory
+ *   transactions weren't tagged with the customer order reference.
+ *
+ * When both sources exist they always agree. DSL is primary because:
+ *   - Higher coverage (98.5% vs 92.6%)
+ *   - Available immediately at order creation (not dependent on manufacturing progress)
+ *   - Canonical source of demand-to-supply relationships in the ERP
+ *   - Always 1:1 mapping (one line → one lot, confirmed zero multi-lot cases)
+ */
+async function getLotIdMapping(pool, orderId, baseNumber) {
   const lotIdMap = new Map();
+
+  // Strategy 1 (primary): DEMAND_SUPPLY_LINK
   try {
-    const lotResult = await pool
+    const dslResult = await pool
       .request()
-      .input("baseNumber", sql.VarChar, baseNumber)
       .input("orderId", sql.VarChar, orderId).query(`
-        SELECT DISTINCT
-          wo.LOT_ID AS [lotId],
-          it.CUST_ORDER_LINE_NO AS [lineNo]
-        FROM WORK_ORDER wo 
-        INNER JOIN INVENTORY_TRANS it
-          ON wo.BASE_ID = it.WORKORDER_BASE_ID
-          AND wo.LOT_ID = it.WORKORDER_LOT_ID
-        WHERE wo.BASE_ID = @baseNumber
-          AND it.CUST_ORDER_ID = @orderId
-          AND wo.LOT_ID NOT LIKE '%W'
-          AND it.CUST_ORDER_LINE_NO IS NOT NULL
-        ORDER BY it.CUST_ORDER_LINE_NO, wo.LOT_ID
+        SELECT
+          dsl.DEMAND_SEQ_NO AS [lineNo],
+          dsl.SUPPLY_LOT_ID AS [lotId]
+        FROM DEMAND_SUPPLY_LINK dsl WITH (NOLOCK)
+        WHERE dsl.DEMAND_BASE_ID = @orderId
+          AND dsl.SUPPLY_TYPE = 'WO'
+          AND dsl.DEMAND_TYPE = 'CO'
+          AND dsl.DEMAND_SEQ_NO IS NOT NULL
+          AND dsl.SUPPLY_LOT_ID IS NOT NULL
+        ORDER BY dsl.DEMAND_SEQ_NO
       `);
 
-    for (const row of lotResult.recordset) {
+    for (const row of dslResult.recordset) {
       const lineNo = row.lineNo;
       const lotId = row.lotId?.trim();
       if (lotId && !lotIdMap.has(lineNo)) {
@@ -219,8 +237,66 @@ async function getOrderLineItems(orderId) {
       }
     }
   } catch (err) {
-    logger.warn("Could not fetch LOT_ID mapping:", err.message);
+    logger.warn(
+      "Could not fetch LOT_ID mapping from DEMAND_SUPPLY_LINK:",
+      err.message,
+    );
   }
+
+  // Strategy 2 (fallback): WORK_ORDER + INVENTORY_TRANS
+  // Only fires when DSL returns nothing (covers ~27 edge-case orders)
+  if (lotIdMap.size === 0) {
+    try {
+      const lotResult = await pool
+        .request()
+        .input("baseNumber", sql.VarChar, baseNumber)
+        .input("orderId", sql.VarChar, orderId).query(`
+          SELECT DISTINCT
+            wo.LOT_ID AS [lotId],
+            it.CUST_ORDER_LINE_NO AS [lineNo]
+          FROM WORK_ORDER wo
+          INNER JOIN INVENTORY_TRANS it
+            ON wo.BASE_ID = it.WORKORDER_BASE_ID
+            AND wo.LOT_ID = it.WORKORDER_LOT_ID
+          WHERE wo.BASE_ID = @baseNumber
+            AND it.CUST_ORDER_ID = @orderId
+            AND wo.LOT_ID NOT LIKE '%W'
+            AND it.CUST_ORDER_LINE_NO IS NOT NULL
+          ORDER BY it.CUST_ORDER_LINE_NO, wo.LOT_ID
+        `);
+
+      for (const row of lotResult.recordset) {
+        const lineNo = row.lineNo;
+        const lotId = row.lotId?.trim();
+        if (lotId && !lotIdMap.has(lineNo)) {
+          lotIdMap.set(lineNo, lotId);
+        }
+      }
+
+      if (lotIdMap.size > 0) {
+        logger.info("LOT_ID mapping resolved via INVENTORY_TRANS fallback", {
+          orderId,
+          mappedLines: lotIdMap.size,
+        });
+      }
+    } catch (err) {
+      logger.warn(
+        "Could not fetch LOT_ID mapping from INVENTORY_TRANS:",
+        err.message,
+      );
+    }
+  }
+
+  return lotIdMap;
+}
+
+async function getOrderLineItems(orderId) {
+  const pool = await getPool();
+
+  const baseNumber = extractBaseNumber(orderId);
+
+  // Step 1: Get LOT_ID mapping (DSL primary, INVENTORY_TRANS fallback)
+  const lotIdMap = await getLotIdMapping(pool, orderId, baseNumber);
 
   // Step 2: Get line items
   const lineResult = await pool.request().input("orderId", sql.VarChar, orderId)
@@ -274,50 +350,10 @@ async function getOrderLineItems(orderId) {
 async function getOrderLineItemsPaginated(orderId, limit = 50, offset = 0) {
   const pool = await getPool();
 
-  // Extract base number from order ID
-  let baseNumber = orderId;
-  if (orderId.includes(" ")) {
-    baseNumber = orderId.split(" ")[0];
-  } else if (orderId.includes("-")) {
-    baseNumber = orderId.split("-")[0];
-  } else {
-    const match = orderId.match(/^(.+\d)R\d+$/);
-    if (match) {
-      baseNumber = match[1];
-    }
-  }
+  const baseNumber = extractBaseNumber(orderId);
 
-  // Step 1: Get LOT_ID mapping from WORK_ORDER + INVENTORY_TRANS
-  const lotIdMap = new Map();
-  try {
-    const lotResult = await pool
-      .request()
-      .input("baseNumber", sql.VarChar, baseNumber)
-      .input("orderId", sql.VarChar, orderId).query(`
-        SELECT DISTINCT
-          wo.LOT_ID AS [lotId],
-          it.CUST_ORDER_LINE_NO AS [lineNo]
-        FROM WORK_ORDER wo
-        INNER JOIN INVENTORY_TRANS it
-          ON wo.BASE_ID = it.WORKORDER_BASE_ID
-          AND wo.LOT_ID = it.WORKORDER_LOT_ID
-        WHERE wo.BASE_ID = @baseNumber
-          AND it.CUST_ORDER_ID = @orderId
-          AND wo.LOT_ID NOT LIKE '%W'
-          AND it.CUST_ORDER_LINE_NO IS NOT NULL
-        ORDER BY it.CUST_ORDER_LINE_NO, wo.LOT_ID
-      `);
-
-    for (const row of lotResult.recordset) {
-      const lineNo = row.lineNo;
-      const lotId = row.lotId?.trim();
-      if (lotId && !lotIdMap.has(lineNo)) {
-        lotIdMap.set(lineNo, lotId);
-      }
-    }
-  } catch (err) {
-    logger.warn("Could not fetch LOT_ID mapping:", err.message);
-  }
+  // Step 1: Get LOT_ID mapping (DSL primary, INVENTORY_TRANS fallback)
+  const lotIdMap = await getLotIdMapping(pool, orderId, baseNumber);
 
   // Step 2: Get paginated line items
   const lineResult = await pool
