@@ -15,6 +15,23 @@ function formatDate(date) {
   return d.toISOString().split("T")[0];
 }
 
+function formatTax(row) {
+  const subtotal = parseFloat(row.totalAmount) || 0;
+  const taxPercent = parseFloat(row.combinedTaxPercent) || 0;
+  const taxAmount = Math.round(subtotal * taxPercent) / 100;
+  const totalWithTax = subtotal + taxAmount;
+  const currency = row.currencyId?.trim() || "USD";
+
+  return {
+    salesTaxGroupId: row.salesTaxGroupId?.trim() || null,
+    taxPercent,
+    taxAmount,
+    formattedTaxAmount: formatCurrency(taxAmount, currency),
+    totalWithTax,
+    formattedTotalWithTax: formatCurrency(totalWithTax, currency),
+  };
+}
+
 function formatCurrency(amount, currency = "USD") {
   const value = parseFloat(amount) || 0;
   const symbol = currency === "USD" ? "$" : currency;
@@ -29,6 +46,7 @@ function formatOrderAcknowledgement(orderRow, lineItems) {
     customerPoRef: orderRow.customerPoRef?.trim() || null,
     totalAmount: parseFloat(orderRow.totalAmount) || 0,
     formattedTotal: formatCurrency(orderRow.totalAmount, orderRow.currencyId),
+    tax: formatTax(orderRow),
     currencyId: orderRow.currencyId?.trim() || "USD",
     termsDescription: orderRow.termsDescription?.trim() || "N/A",
     desiredShipDate: formatDate(orderRow.desiredShipDate),
