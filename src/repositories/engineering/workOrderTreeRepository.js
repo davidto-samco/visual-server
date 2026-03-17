@@ -6,8 +6,9 @@ const { getPool, sql } = require("../../database");
  */
 async function getSimplifiedTree(baseId, lotId) {
   const pool = await getPool();
-  const result = await pool
-    .request()
+  const request = pool.request();
+
+  const result = await request
     .input("baseId", sql.VarChar, baseId)
     .input("lotId", sql.VarChar, lotId).query(`
       ;WITH WO_Tree AS (
@@ -22,7 +23,7 @@ async function getSimplifiedTree(baseId, lotId) {
           wo.CLOSE_DATE AS closeDate,
           CAST(NULL AS VARCHAR(3)) AS parentSubId,
           0 AS depth,
-          CAST(RIGHT('000' + wo.SUB_ID, 3) AS VARCHAR(500)) AS sortPath
+          CAST(RIGHT('000' + wo.SUB_ID, 3) AS VARCHAR(MAX)) AS sortPath
         FROM WORK_ORDER wo WITH (NOLOCK)
         WHERE wo.BASE_ID = @baseId AND wo.LOT_ID = @lotId AND wo.SUB_ID = '0'
 
@@ -39,7 +40,7 @@ async function getSimplifiedTree(baseId, lotId) {
           wo.CLOSE_DATE,
           r.WORKORDER_SUB_ID,
           t.depth + 1,
-          CAST(t.sortPath + '.' + RIGHT('000' + wo.SUB_ID, 3) AS VARCHAR(500))
+          CAST(t.sortPath + '.' + RIGHT('0000' + CAST(r.OPERATION_SEQ_NO AS VARCHAR), 4) + RIGHT('0000' + CAST(r.PIECE_NO AS VARCHAR), 4) AS VARCHAR(MAX))
         FROM WO_Tree t
         JOIN REQUIREMENT r WITH (NOLOCK)
           ON r.WORKORDER_BASE_ID = @baseId
@@ -67,6 +68,7 @@ async function getSimplifiedTree(baseId, lotId) {
       FROM WO_Tree t
       LEFT JOIN PART p WITH (NOLOCK) ON t.partId = p.ID
       ORDER BY t.sortPath
+      OPTION (MAXRECURSION 0)
     `);
 
   return result.recordset;
@@ -100,7 +102,7 @@ async function getDetailedTree(baseId, lotId) {
           CAST(NULL AS SMALLINT) AS parentOpSeq,
           CAST(NULL AS SMALLINT) AS linkPieceNo,
           0 AS depth,
-          CAST(RIGHT('000' + wo.SUB_ID, 3) AS VARCHAR(500)) AS sortPath
+          CAST(RIGHT('000' + wo.SUB_ID, 3) AS VARCHAR(MAX)) AS sortPath
         FROM WORK_ORDER wo WITH (NOLOCK)
         WHERE wo.BASE_ID = @baseId AND wo.LOT_ID = @lotId AND wo.SUB_ID = '0'
 
@@ -118,7 +120,7 @@ async function getDetailedTree(baseId, lotId) {
           r.OPERATION_SEQ_NO,
           r.PIECE_NO,
           t.depth + 2,
-          CAST(t.sortPath + '.' + RIGHT('000' + wo.SUB_ID, 3) AS VARCHAR(500))
+          CAST(t.sortPath + '.' + RIGHT('0000' + CAST(r.OPERATION_SEQ_NO AS VARCHAR), 4) + RIGHT('0000' + CAST(r.PIECE_NO AS VARCHAR), 4) AS VARCHAR(MAX))
         FROM WO_Tree t
         JOIN REQUIREMENT r WITH (NOLOCK)
           ON r.WORKORDER_BASE_ID = @baseId
@@ -224,6 +226,7 @@ async function getDetailedTree(baseId, lotId) {
       LEFT JOIN PART p WITH (NOLOCK) ON n.partId = p.ID
       LEFT JOIN SHOP_RESOURCE sr WITH (NOLOCK) ON n.resourceId = sr.ID
       ORDER BY n.sortKey
+      OPTION (MAXRECURSION 0)
     `);
 
   return result.recordset;
