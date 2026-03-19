@@ -10,13 +10,15 @@ describe("WorkOrderTreeService", () => {
   });
 
   describe("getSimplifiedTree", () => {
-    it("should return null root when no data found", async () => {
-      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue([]);
+    it("should return null tree when no data found", async () => {
+      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue({
+        workOrders: [],
+        relationships: [],
+      });
 
       const result = await workOrderTreeService.getSimplifiedTree("WO-001", "1");
 
-      // Service returns { root: null } when empty
-      expect(result.root).toBeNull();
+      expect(result.tree).toBeNull();
       expect(result.totalWorkOrders).toBe(0);
     });
 
@@ -33,22 +35,22 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should return single root node when no children", async () => {
-      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue([
-        {
-          subId: "0",
-          partId: "MAIN-ASSY",
-          partDescription: "Main Assembly",
-          orderQty: 1,
-          status: "R",
-          type: "M",
-          startDate: new Date("2024-01-01"),
-          finishDate: new Date("2024-01-15"),
-          closeDate: null,
-          parentSubId: null,
-          depth: 0,
-          sortPath: "000",
-        },
-      ]);
+      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "MAIN-ASSY",
+            partDescription: "Main Assembly",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: new Date("2024-01-01"),
+            finishDate: new Date("2024-01-15"),
+            closeDate: null,
+          },
+        ],
+        relationships: [],
+      });
 
       const result = await workOrderTreeService.getSimplifiedTree("WO-001", "1");
 
@@ -60,50 +62,47 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should build nested tree with children", async () => {
-      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue([
-        {
-          subId: "0",
-          partId: "MAIN-ASSY",
-          partDescription: "Main Assembly",
-          orderQty: 1,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          closeDate: null,
-          parentSubId: null,
-          depth: 0,
-          sortPath: "000",
-        },
-        {
-          subId: "1",
-          partId: "SUB-ASSY-001",
-          partDescription: "Sub Assembly 1",
-          orderQty: 2,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          closeDate: null,
-          parentSubId: "0",
-          depth: 1,
-          sortPath: "000.001",
-        },
-        {
-          subId: "2",
-          partId: "SUB-ASSY-002",
-          partDescription: "Sub Assembly 2",
-          orderQty: 1,
-          status: "C",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          closeDate: new Date("2024-01-10"),
-          parentSubId: "1",
-          depth: 2,
-          sortPath: "000.001.002",
-        },
-      ]);
+      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "MAIN-ASSY",
+            partDescription: "Main Assembly",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+            closeDate: null,
+          },
+          {
+            subId: "1",
+            partId: "SUB-ASSY-001",
+            partDescription: "Sub Assembly 1",
+            orderQty: 2,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+            closeDate: null,
+          },
+          {
+            subId: "2",
+            partId: "SUB-ASSY-002",
+            partDescription: "Sub Assembly 2",
+            orderQty: 1,
+            status: "C",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+            closeDate: new Date("2024-01-10"),
+          },
+        ],
+        relationships: [
+          { parentSubId: "0", childSubId: "1", opSeq: 10, pieceNo: 1 },
+          { parentSubId: "1", childSubId: "2", opSeq: 10, pieceNo: 1 },
+        ],
+      });
 
       const result = await workOrderTreeService.getSimplifiedTree("WO-001", "1");
 
@@ -118,22 +117,22 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should format status correctly", async () => {
-      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue([
-        {
-          subId: "0",
-          partId: "PART-001",
-          partDescription: "Part",
-          orderQty: 1,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          closeDate: null,
-          parentSubId: null,
-          depth: 0,
-          sortPath: "000",
-        },
-      ]);
+      workOrderTreeRepository.getSimplifiedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "PART-001",
+            partDescription: "Part",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+            closeDate: null,
+          },
+        ],
+        relationships: [],
+      });
 
       const result = await workOrderTreeService.getSimplifiedTree("WO-001", "1");
 
@@ -143,13 +142,17 @@ describe("WorkOrderTreeService", () => {
   });
 
   describe("getDetailedTree", () => {
-    it("should return null root when no data found", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([]);
+    it("should return null tree when no data found", async () => {
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [],
+        relationships: [],
+        operations: [],
+        materials: [],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
-      // Service returns { root: null } when empty
-      expect(result.root).toBeNull();
+      expect(result.tree).toBeNull();
       expect(result.summary).toBeNull();
     });
 
@@ -166,68 +169,42 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should return tree with WO, OP, and MAT nodes", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([
-        {
-          nodeType: "WO",
-          depth: 0,
-          subId: "0",
-          partId: "MAIN-ASSY",
-          partDescription: "Main Assembly",
-          qty: 1,
-          status: "R",
-          type: "M",
-          startDate: new Date("2024-01-01"),
-          finishDate: new Date("2024-01-15"),
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0000-0000",
-        },
-        {
-          nodeType: "OP",
-          depth: 1,
-          subId: "0",
-          partId: null,
-          partDescription: null,
-          qty: null,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: "WELD-01",
-          resourceDescription: "Welding Station 1",
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0000",
-        },
-        {
-          nodeType: "MAT",
-          depth: 2,
-          subId: "0",
-          partId: "STEEL-PLATE",
-          partDescription: "Steel Plate",
-          qty: 5,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: "24x48",
-          pieceNo: 1,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0001",
-        },
-      ]);
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "MAIN-ASSY",
+            partDescription: "Main Assembly",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: new Date("2024-01-01"),
+            finishDate: new Date("2024-01-15"),
+          },
+        ],
+        relationships: [],
+        operations: [
+          {
+            subId: "0",
+            opSeq: 10,
+            resourceId: "WELD-01",
+            resourceDescription: "Welding Station 1",
+            status: "R",
+          },
+        ],
+        materials: [
+          {
+            subId: "0",
+            opSeq: 10,
+            pieceNo: 1,
+            partId: "STEEL-PLATE",
+            partDescription: "Steel Plate",
+            qty: 5,
+            status: "R",
+            dimensions: "24x48",
+          },
+        ],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
@@ -240,108 +217,59 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should return summary with correct counts", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([
-        {
-          nodeType: "WO",
-          depth: 0,
-          subId: "0",
-          partId: "MAIN",
-          partDescription: "Main",
-          qty: 1,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0000-0000",
-        },
-        {
-          nodeType: "OP",
-          depth: 1,
-          subId: "0",
-          partId: null,
-          partDescription: null,
-          qty: null,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: "RES-01",
-          resourceDescription: "Resource 1",
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0000",
-        },
-        {
-          nodeType: "OP",
-          depth: 1,
-          subId: "0",
-          partId: null,
-          partDescription: null,
-          qty: null,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 20,
-          resourceId: "RES-02",
-          resourceDescription: "Resource 2",
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0020-0000",
-        },
-        {
-          nodeType: "MAT",
-          depth: 2,
-          subId: "0",
-          partId: "MAT-001",
-          partDescription: "Material 1",
-          qty: 10,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: 1,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0001",
-        },
-        {
-          nodeType: "MAT",
-          depth: 2,
-          subId: "0",
-          partId: "MAT-002",
-          partDescription: "Material 2",
-          qty: 5,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: 2,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0002",
-        },
-      ]);
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "MAIN",
+            partDescription: "Main",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+          },
+        ],
+        relationships: [],
+        operations: [
+          {
+            subId: "0",
+            opSeq: 10,
+            resourceId: "RES-01",
+            resourceDescription: "Resource 1",
+            status: "R",
+          },
+          {
+            subId: "0",
+            opSeq: 20,
+            resourceId: "RES-02",
+            resourceDescription: "Resource 2",
+            status: "R",
+          },
+        ],
+        materials: [
+          {
+            subId: "0",
+            opSeq: 10,
+            pieceNo: 1,
+            partId: "MAT-001",
+            partDescription: "Material 1",
+            qty: 10,
+            status: "R",
+            dimensions: null,
+          },
+          {
+            subId: "0",
+            opSeq: 10,
+            pieceNo: 2,
+            partId: "MAT-002",
+            partDescription: "Material 2",
+            qty: 5,
+            status: "R",
+            dimensions: null,
+          },
+        ],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
@@ -352,28 +280,23 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should format WO node with correct formattedId", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([
-        {
-          nodeType: "WO",
-          depth: 0,
-          subId: "0",
-          partId: "PART-001",
-          partDescription: "Part Description",
-          qty: 10,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0000-0000",
-        },
-      ]);
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "PART-001",
+            partDescription: "Part Description",
+            orderQty: 10,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+          },
+        ],
+        relationships: [],
+        operations: [],
+        materials: [],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
@@ -381,72 +304,47 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should format child WO node with sub ID in formattedId", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([
-        {
-          nodeType: "WO",
-          depth: 0,
-          subId: "0",
-          partId: "MAIN",
-          partDescription: "Main",
-          qty: 1,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0000-0000",
-        },
-        {
-          nodeType: "OP",
-          depth: 1,
-          subId: "0",
-          partId: null,
-          partDescription: null,
-          qty: null,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: "RES",
-          resourceDescription: "Resource",
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0000",
-        },
-        {
-          nodeType: "WO",
-          depth: 2,
-          subId: "1",
-          partId: "SUB",
-          partDescription: "Sub Assembly",
-          qty: 2,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: "0",
-          parentOpSeq: 10,
-          sortKey: "000.001-0000-0000",
-        },
-      ]);
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "MAIN",
+            partDescription: "Main",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+          },
+          {
+            subId: "1",
+            partId: "SUB",
+            partDescription: "Sub Assembly",
+            orderQty: 2,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+          },
+        ],
+        relationships: [
+          { parentSubId: "0", childSubId: "1", opSeq: 10, pieceNo: 1 },
+        ],
+        operations: [
+          {
+            subId: "0",
+            opSeq: 10,
+            resourceId: "RES",
+            resourceDescription: "Resource",
+            status: "R",
+          },
+        ],
+        materials: [],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
-      // Find the child WO node
+      // Find the child WO node (it's a sibling of its OPs under the parent OP)
       const childWO = result.tree.children[0].children.find(
         (n) => n.nodeType === "WO"
       );
@@ -454,48 +352,31 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should format OP node with formattedDescription", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([
-        {
-          nodeType: "WO",
-          depth: 0,
-          subId: "0",
-          partId: "PART",
-          partDescription: "Part",
-          qty: 1,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0000-0000",
-        },
-        {
-          nodeType: "OP",
-          depth: 1,
-          subId: "0",
-          partId: null,
-          partDescription: null,
-          qty: null,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: "LASER",
-          resourceDescription: "Laser Cutter",
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0000",
-        },
-      ]);
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "PART",
+            partDescription: "Part",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+          },
+        ],
+        relationships: [],
+        operations: [
+          {
+            subId: "0",
+            opSeq: 10,
+            resourceId: "LASER",
+            resourceDescription: "Laser Cutter",
+            status: "R",
+          },
+        ],
+        materials: [],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
@@ -505,68 +386,42 @@ describe("WorkOrderTreeService", () => {
     });
 
     it("should format MAT node with formattedPart", async () => {
-      workOrderTreeRepository.getDetailedTree.mockResolvedValue([
-        {
-          nodeType: "WO",
-          depth: 0,
-          subId: "0",
-          partId: "MAIN",
-          partDescription: "Main",
-          qty: 1,
-          status: "R",
-          type: "M",
-          startDate: null,
-          finishDate: null,
-          opSeq: null,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0000-0000",
-        },
-        {
-          nodeType: "OP",
-          depth: 1,
-          subId: "0",
-          partId: null,
-          partDescription: null,
-          qty: null,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: "RES",
-          resourceDescription: "Resource",
-          dimensions: null,
-          pieceNo: null,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0000",
-        },
-        {
-          nodeType: "MAT",
-          depth: 2,
-          subId: "0",
-          partId: "STEEL-001",
-          partDescription: "Steel Plate 1/4",
-          qty: 5,
-          status: "R",
-          type: null,
-          startDate: null,
-          finishDate: null,
-          opSeq: 10,
-          resourceId: null,
-          resourceDescription: null,
-          dimensions: "24x48",
-          pieceNo: 1,
-          parentSubId: null,
-          parentOpSeq: null,
-          sortKey: "000-0010-0001",
-        },
-      ]);
+      workOrderTreeRepository.getDetailedTree.mockResolvedValue({
+        workOrders: [
+          {
+            subId: "0",
+            partId: "MAIN",
+            partDescription: "Main",
+            orderQty: 1,
+            status: "R",
+            type: "M",
+            startDate: null,
+            finishDate: null,
+          },
+        ],
+        relationships: [],
+        operations: [
+          {
+            subId: "0",
+            opSeq: 10,
+            resourceId: "RES",
+            resourceDescription: "Resource",
+            status: "R",
+          },
+        ],
+        materials: [
+          {
+            subId: "0",
+            opSeq: 10,
+            pieceNo: 1,
+            partId: "STEEL-001",
+            partDescription: "Steel Plate 1/4",
+            qty: 5,
+            status: "R",
+            dimensions: "24x48",
+          },
+        ],
+      });
 
       const result = await workOrderTreeService.getDetailedTree("WO-001", "1");
 
