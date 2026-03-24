@@ -136,11 +136,21 @@ async function getDetailedTree(baseId, lotId) {
         r.PIECE_NO AS pieceNo,
         r.PART_ID AS partId,
         p.DESCRIPTION AS partDescription,
+        CAST(CAST(rb.BITS AS VARBINARY(MAX)) AS VARCHAR(MAX)) AS reqDescription,
         r.CALC_QTY AS qty,
         r.STATUS AS status,
         r.DIMENSIONS AS dimensions
       FROM REQUIREMENT r WITH (NOLOCK)
       LEFT JOIN PART p WITH (NOLOCK) ON r.PART_ID = p.ID
+      LEFT JOIN REQUIREMENT_BINARY rb WITH (NOLOCK)
+        ON r.WORKORDER_TYPE = rb.WORKORDER_TYPE
+        AND r.WORKORDER_BASE_ID = rb.WORKORDER_BASE_ID
+        AND r.WORKORDER_LOT_ID = rb.WORKORDER_LOT_ID
+        AND r.WORKORDER_SPLIT_ID = rb.WORKORDER_SPLIT_ID
+        AND r.WORKORDER_SUB_ID = rb.WORKORDER_SUB_ID
+        AND r.OPERATION_SEQ_NO = rb.OPERATION_SEQ_NO
+        AND r.PIECE_NO = rb.PIECE_NO
+        AND rb.TYPE = 'D'
       WHERE r.WORKORDER_BASE_ID = @baseId
         AND r.WORKORDER_LOT_ID = @lotId
         AND r.SUBORD_WO_SUB_ID IS NULL
