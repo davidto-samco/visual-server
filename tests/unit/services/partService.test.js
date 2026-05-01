@@ -28,7 +28,7 @@ describe("PartService", () => {
 
     it("should throw ValidationError for empty part number", async () => {
       await expect(partService.searchPart("", 1, 50)).rejects.toThrow(
-        ValidationError
+        ValidationError,
       );
     });
 
@@ -42,7 +42,7 @@ describe("PartService", () => {
       expect(partRepository.searchByPartNumber).toHaveBeenCalledWith(
         "PART",
         50,
-        0
+        0,
       );
     });
 
@@ -55,7 +55,7 @@ describe("PartService", () => {
       expect(partRepository.searchByPartNumber).toHaveBeenCalledWith(
         "PART",
         50,
-        50
+        50,
       );
     });
 
@@ -90,14 +90,16 @@ describe("PartService", () => {
     });
 
     it("should throw ValidationError for empty part ID", async () => {
-      await expect(partService.getPartById("")).rejects.toThrow(ValidationError);
+      await expect(partService.getPartById("")).rejects.toThrow(
+        ValidationError,
+      );
     });
 
     it("should throw NotFoundError when part not found", async () => {
       partRepository.findById.mockResolvedValue(null);
 
       await expect(partService.getPartById("NOPE-999")).rejects.toThrow(
-        NotFoundError
+        NotFoundError,
       );
     });
 
@@ -141,7 +143,7 @@ describe("PartService", () => {
 
     it("should throw ValidationError for empty part ID", async () => {
       await expect(partService.getWhereUsed("", 1, 50)).rejects.toThrow(
-        ValidationError
+        ValidationError,
       );
     });
 
@@ -149,7 +151,7 @@ describe("PartService", () => {
       partRepository.exists.mockResolvedValue(false);
 
       await expect(partService.getWhereUsed("NOPE-999", 1, 50)).rejects.toThrow(
-        NotFoundError
+        NotFoundError,
       );
     });
 
@@ -171,7 +173,11 @@ describe("PartService", () => {
 
       await partService.getWhereUsed("PART-001", 3, 25);
 
-      expect(partRepository.getWhereUsed).toHaveBeenCalledWith("PART-001", 25, 50);
+      expect(partRepository.getWhereUsed).toHaveBeenCalledWith(
+        "PART-001",
+        25,
+        50,
+      );
     });
 
     it("should format where-used records", async () => {
@@ -202,7 +208,7 @@ describe("PartService", () => {
     it("should return extended description when found", async () => {
       partRepository.exists.mockResolvedValue(true);
       partRepository.getExtendedDescription.mockResolvedValue(
-        "This is an extended description for the part"
+        "This is an extended description for the part",
       );
 
       const result = await partService.getExtendedDescription("PART-001");
@@ -212,7 +218,7 @@ describe("PartService", () => {
 
     it("should throw ValidationError for empty part ID", async () => {
       await expect(partService.getExtendedDescription("")).rejects.toThrow(
-        ValidationError
+        ValidationError,
       );
     });
 
@@ -220,7 +226,7 @@ describe("PartService", () => {
       partRepository.exists.mockResolvedValue(false);
 
       await expect(
-        partService.getExtendedDescription("NOPE-999")
+        partService.getExtendedDescription("NOPE-999"),
       ).rejects.toThrow(NotFoundError);
     });
 
@@ -232,7 +238,7 @@ describe("PartService", () => {
 
       expect(partRepository.exists).toHaveBeenCalledWith("PART-001");
       expect(partRepository.getExtendedDescription).toHaveBeenCalledWith(
-        "PART-001"
+        "PART-001",
       );
     });
 
@@ -243,6 +249,89 @@ describe("PartService", () => {
       const result = await partService.getExtendedDescription("PART-001");
 
       expect(result).toBeNull();
+    });
+  });
+  describe("getPurchaseHistory", () => {
+    it("returns formatted purchase history records", async () => {
+      partRepository.exists.mockResolvedValue(true);
+      partRepository.getPurchaseHistory.mockResolvedValue([
+        {
+          orderDate: new Date(Date.UTC(2013, 0, 25)),
+          desiredRecvDate: new Date(Date.UTC(2013, 0, 28)),
+          promiseDate: null,
+          lastReceivedDate: null,
+          purchaseOrder: "P13-0429",
+          lineNo: 7,
+          lineStatus: "A",
+          delSched: false,
+          vendorId: "KARRIC",
+          vendorName: "KARL W. RICHTER",
+          orderQty: 4,
+          receivedQty: 0,
+          currencyId: "CDN",
+          currencyName: "CANADIAN DOLLAR",
+          unitPrice: 0.04,
+          nativeCurrencyId: "CDN",
+          nativeCurrencyName: "CANADIAN DOLLAR",
+          nativeUnitPrice: 0.04,
+          discPercent: 0,
+          fixedCost: 0,
+          standardUnitCost: 0.04,
+        },
+      ]);
+
+      const result = await partService.getPurchaseHistory("F0195");
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        purchaseOrder: "P13-0429",
+        orderDate: "2013-01-25",
+        desiredRecvDate: "2013-01-28",
+        vendorDisplay: "KARRIC - KARL W. RICHTER",
+      });
+    });
+
+    it("returns empty array when part has no purchase history", async () => {
+      partRepository.exists.mockResolvedValue(true);
+      partRepository.getPurchaseHistory.mockResolvedValue([]);
+
+      const result = await partService.getPurchaseHistory("PART-001");
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws ValidationError for empty part ID", async () => {
+      await expect(partService.getPurchaseHistory("")).rejects.toThrow(
+        ValidationError,
+      );
+    });
+
+    it("throws NotFoundError when part does not exist", async () => {
+      partRepository.exists.mockResolvedValue(false);
+
+      await expect(partService.getPurchaseHistory("NOPE-999")).rejects.toThrow(
+        NotFoundError,
+      );
+    });
+
+    it("uppercases the part ID", async () => {
+      partRepository.exists.mockResolvedValue(true);
+      partRepository.getPurchaseHistory.mockResolvedValue([]);
+
+      await partService.getPurchaseHistory("f0195");
+
+      expect(partRepository.exists).toHaveBeenCalledWith("F0195");
+      expect(partRepository.getPurchaseHistory).toHaveBeenCalledWith("F0195");
+    });
+
+    it("does not call getPurchaseHistory when part does not exist", async () => {
+      partRepository.exists.mockResolvedValue(false);
+
+      await expect(partService.getPurchaseHistory("NOPE")).rejects.toThrow(
+        NotFoundError,
+      );
+
+      expect(partRepository.getPurchaseHistory).not.toHaveBeenCalled();
     });
   });
 });

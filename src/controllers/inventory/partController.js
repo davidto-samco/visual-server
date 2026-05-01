@@ -5,7 +5,7 @@ async function search(req, res, next) {
     const result = await partService.searchPart(
       req.query.partNumber,
       req.query.page,
-      req.query.limit
+      req.query.limit,
     );
     res.json({ success: true, data: result.results, meta: result.meta });
   } catch (error) {
@@ -27,7 +27,7 @@ async function getWhereUsed(req, res, next) {
     const result = await partService.getWhereUsed(
       req.params.partId,
       req.query.page,
-      req.query.limit
+      req.query.limit,
     );
     res.json({ success: true, data: result.records, meta: result.meta });
   } catch (error) {
@@ -44,4 +44,19 @@ async function getExtendedDescription(req, res, next) {
   }
 }
 
-module.exports = { search, getById, getWhereUsed, getExtendedDescription };
+async function getPurchaseHistory(req, res, next) {
+  try {
+    const records = await partService.getPurchaseHistory(req.params.partId);
+    res.json({ success: true, data: records });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  search,
+  getById,
+  getWhereUsed,
+  getExtendedDescription,
+  getPurchaseHistory,
+};

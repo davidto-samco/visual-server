@@ -136,6 +136,54 @@ async function getExtendedDescription(partId) {
     : null;
 }
 
+async function getPurchaseHistory(partId) {
+  const pool = await getPool();
+  const result = await pool.request().input("partId", sql.VarChar, partId)
+    .query(`
+      SELECT
+        po.ORDER_DATE                 AS [orderDate],
+        COALESCE(pol.DESIRED_RECV_DATE, po.DESIRED_RECV_DATE) AS [desiredRecvDate],
+        pol.PROMISE_DATE              AS [promiseDate],
+        pol.LAST_RECEIVED_DATE        AS [lastReceivedDate],
+        pol.PURC_ORDER_ID             AS [purchaseOrder],
+        pol.LINE_NO                   AS [lineNo],
+        pol.LINE_STATUS               AS [lineStatus],
+        CAST(CASE WHEN ISNULL(ds.schedCount, 0) > 1 THEN 1 ELSE 0 END AS BIT) AS [delSched],
+        po.VENDOR_ID                  AS [vendorId],
+        v.NAME                        AS [vendorName],
+        ISNULL(pol.ORDER_QTY, 0)          AS [orderQty],
+        ISNULL(pol.TOTAL_RECEIVED_QTY, 0) AS [receivedQty],
+        po.CURRENCY_ID                AS [currencyId],
+        c.NAME                        AS [currencyName],
+        ISNULL(pol.UNIT_PRICE, 0)     AS [unitPrice],
+        nc.ID                         AS [nativeCurrencyId],
+        nc.NAME                       AS [nativeCurrencyName],
+        CASE
+          WHEN po.CURRENCY_ID = nc.ID            THEN ISNULL(pol.UNIT_PRICE, 0)
+          WHEN ISNULL(po.BUY_RATE, 0) = 0        THEN ISNULL(pol.UNIT_PRICE, 0)
+          ELSE ISNULL(pol.UNIT_PRICE, 0) * po.BUY_RATE
+        END                           AS [nativeUnitPrice],
+        ISNULL(pol.TRADE_DISC_PERCENT, 0) AS [discPercent],
+        ISNULL(pol.FIXED_CHARGE, 0)       AS [fixedCost],
+        ISNULL(p.UNIT_MATERIAL_COST, 0)   AS [standardUnitCost]
+      FROM PURC_ORDER_LINE pol WITH (NOLOCK)
+      INNER JOIN PURCHASE_ORDER po WITH (NOLOCK) ON pol.PURC_ORDER_ID = po.ID
+      LEFT JOIN  VENDOR         v  WITH (NOLOCK) ON po.VENDOR_ID = v.ID
+      LEFT JOIN  CURRENCY       c  WITH (NOLOCK) ON po.CURRENCY_ID = c.ID
+      LEFT JOIN  PART           p  WITH (NOLOCK) ON pol.PART_ID = p.ID
+      LEFT JOIN  CURRENCY       nc WITH (NOLOCK) ON nc.TRACKING_CURRENCY = 'Y'
+      LEFT JOIN (
+        SELECT PURC_ORDER_ID, PURC_ORDER_LINE_NO, COUNT(*) AS schedCount
+        FROM PURC_LINE_DEL WITH (NOLOCK)
+        GROUP BY PURC_ORDER_ID, PURC_ORDER_LINE_NO
+      ) ds ON ds.PURC_ORDER_ID      = pol.PURC_ORDER_ID
+          AND ds.PURC_ORDER_LINE_NO = pol.LINE_NO
+      WHERE pol.PART_ID = @partId
+      ORDER BY po.ORDER_DATE DESC, pol.PURC_ORDER_ID DESC, pol.LINE_NO
+    `);
+  return result.recordset;
+}
+
 module.exports = {
   findById,
   searchByPartNumber,
@@ -143,5 +191,6 @@ module.exports = {
   exists,
   getWhereUsed,
   countWhereUsed,
+  getPurchaseHistory,
   getExtendedDescription,
 };
