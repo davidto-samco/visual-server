@@ -166,4 +166,91 @@ describe("Inventory Routes", () => {
       expect(response.body.data.extendedDescription).toBe("");
     });
   });
+  describe("GET /api/inventory/parts/:partId/purchase-history", () => {
+    it("should return purchase history records", async () => {
+      const mockRecords = [
+        {
+          orderDate: "2013-01-25",
+          desiredRecvDate: "2013-01-28",
+          promiseDate: null,
+          lastReceivedDate: null,
+          purchaseOrder: "P13-0429",
+          lineNo: 7,
+          lineStatus: "A",
+          delSched: false,
+          vendorId: "KARRIC",
+          vendorName: "KARL W. RICHTER",
+          vendorDisplay: "KARRIC - KARL W. RICHTER",
+          orderQty: 4,
+          receivedQty: 0,
+          currencyId: "CDN",
+          currencyName: "CANADIAN DOLLAR",
+          unitPrice: 0.04,
+          nativeCurrencyId: "CDN",
+          nativeCurrencyName: "CANADIAN DOLLAR",
+          nativeUnitPrice: 0.04,
+          discPercent: 0,
+          fixedCost: 0,
+          standardUnitCost: 0.04,
+        },
+      ];
+      partService.getPurchaseHistory.mockResolvedValue(mockRecords);
+
+      const response = await request(app)
+        .get("/api/inventory/parts/F0195/purchase-history")
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].purchaseOrder).toBe("P13-0429");
+      expect(response.body.data[0].vendorDisplay).toBe(
+        "KARRIC - KARL W. RICHTER",
+      );
+    });
+
+    it("should return empty array when part has no purchase history", async () => {
+      partService.getPurchaseHistory.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get("/api/inventory/parts/PART-001/purchase-history")
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual([]);
+    });
+
+    it("should return 404 for non-existent part", async () => {
+      const { NotFoundError } = require("../../src/utils/errors");
+      partService.getPurchaseHistory.mockRejectedValue(
+        new NotFoundError("Part UNKNOWN"),
+      );
+
+      const response = await request(app)
+        .get("/api/inventory/parts/UNKNOWN/purchase-history")
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("should pass partId from URL to service", async () => {
+      partService.getPurchaseHistory.mockResolvedValue([]);
+
+      await request(app)
+        .get("/api/inventory/parts/F0195/purchase-history")
+        .expect(200);
+
+      expect(partService.getPurchaseHistory).toHaveBeenCalledWith("F0195");
+    });
+
+    it("should return data without meta (not paginated)", async () => {
+      partService.getPurchaseHistory.mockResolvedValue([]);
+
+      const response = await request(app)
+        .get("/api/inventory/parts/PART-001/purchase-history")
+        .expect(200);
+
+      expect(response.body.meta).toBeUndefined();
+    });
+  });
 });

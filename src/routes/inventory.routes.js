@@ -9,5 +9,9 @@ router.get(
   "/parts/:partId/extended-description",
   partController.getExtendedDescription,
 );
+router.get(
+  "/parts/:partId/purchase-history",
+  partController.getPurchaseHistory,
+);
 
 module.exports = router;

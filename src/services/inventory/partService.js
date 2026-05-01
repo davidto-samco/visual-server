@@ -7,6 +7,9 @@ const {
   calculateTotalPages,
 } = require("../../utils/validation");
 const { formatWhereUsed } = require("../../models/inventory/WhereUsed");
+const {
+  formatPurchaseHistory,
+} = require("../../models/inventory/PurchaseHistory");
 
 async function searchPart(partNumber, page, limit) {
   const normalized = validateRequired(partNumber, "Part number").toUpperCase();
@@ -17,7 +20,7 @@ async function searchPart(partNumber, page, limit) {
   const results = await partRepository.searchByPartNumber(
     normalized,
     pagination.limit,
-    offset
+    offset,
   );
   return {
     results,
@@ -49,7 +52,7 @@ async function getWhereUsed(partId, page, limit) {
   const records = await partRepository.getWhereUsed(
     normalized,
     pagination.limit,
-    offset
+    offset,
   );
 
   return {
@@ -72,9 +75,20 @@ async function getExtendedDescription(partId) {
   return partRepository.getExtendedDescription(normalized);
 }
 
+async function getPurchaseHistory(partId) {
+  const normalized = validateRequired(partId, "Part ID").toUpperCase();
+
+  const exists = await partRepository.exists(normalized);
+  if (!exists) throw new NotFoundError(`Part ${partId}`);
+
+  const records = await partRepository.getPurchaseHistory(normalized);
+  return records.map(formatPurchaseHistory);
+}
+
 module.exports = {
   searchPart,
   getPartById,
   getWhereUsed,
+  getPurchaseHistory,
   getExtendedDescription,
 };
