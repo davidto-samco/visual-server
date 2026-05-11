@@ -13,5 +13,6 @@ router.get(
   "/parts/:partId/purchase-history",
   partController.getPurchaseHistory,
 );
+router.get("/parts/:partId/specifications", partController.getSpecifications);
 
 module.exports = router;

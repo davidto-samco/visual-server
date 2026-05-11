@@ -25,11 +25,29 @@ async function findById(partId) {
             ISNULL(p.UNIT_MATERIAL_COST, 0) + ISNULL(p.UNIT_LABOR_COST, 0) + 
                 ISNULL(p.UNIT_BURDEN_COST, 0) + ISNULL(p.UNIT_SERVICE_COST, 0) AS totalUnitCost,
             p.QTY_ON_HAND AS qtyOnHand,
-            p.QTY_AVAILABLE_ISS AS qtyAvailable
+            p.QTY_AVAILABLE_ISS AS qtyAvailable,
+            p.PREF_VENDOR_ID AS preferredVendorId,
+            v.NAME AS preferredVendorName,
+            p.MFG_NAME AS manufacturer,
+            p.MFG_PART_ID AS manufacturerPartId
         FROM PART p WITH (NOLOCK)
+        LEFT JOIN VENDOR v WITH (NOLOCK) ON v.ID = p.PREF_VENDOR_ID
         WHERE p.ID = @partId
     `);
   return result.recordset.length > 0 ? result.recordset[0] : null;
+}
+
+async function getSpecifications(partId) {
+  const pool = await getPool();
+  const result = await pool.request().input("partId", sql.VarChar, partId)
+    .query(`
+      SELECT CONVERT(VARCHAR(MAX), CAST(BITS AS VARBINARY(MAX))) AS specifications
+      FROM PART_BINARY WITH (NOLOCK)
+      WHERE PART_ID = @partId AND TYPE = 'D'
+    `);
+  return result.recordset.length > 0
+    ? result.recordset[0].specifications
+    : null;
 }
 
 async function exists(partId) {
@@ -186,6 +204,7 @@ async function getPurchaseHistory(partId) {
 
 module.exports = {
   findById,
+  getSpecifications,
   searchByPartNumber,
   countByPartNumber,
   exists,

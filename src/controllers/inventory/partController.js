@@ -22,6 +22,15 @@ async function getById(req, res, next) {
   }
 }
 
+async function getSpecifications(req, res, next) {
+  try {
+    const result = await partService.getSpecifications(req.params.partId);
+    res.json({ success: true, data: { specifications: result } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getWhereUsed(req, res, next) {
   try {
     const result = await partService.getWhereUsed(
@@ -56,6 +65,7 @@ async function getPurchaseHistory(req, res, next) {
 module.exports = {
   search,
   getById,
+  getSpecifications,
   getWhereUsed,
   getExtendedDescription,
   getPurchaseHistory,

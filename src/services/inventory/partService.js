@@ -40,6 +40,15 @@ async function getPartById(partId) {
   return part;
 }
 
+async function getSpecifications(partId) {
+  const normalized = validateRequired(partId, "Part ID").toUpperCase();
+
+  const exists = await partRepository.exists(normalized);
+  if (!exists) throw new NotFoundError(`Part ${partId}`);
+
+  return partRepository.getSpecifications(normalized);
+}
+
 async function getWhereUsed(partId, page, limit) {
   const normalized = validateRequired(partId, "Part ID").toUpperCase();
   const pagination = validatePagination(page, limit);
@@ -88,6 +97,7 @@ async function getPurchaseHistory(partId) {
 module.exports = {
   searchPart,
   getPartById,
+  getSpecifications,
   getWhereUsed,
   getPurchaseHistory,
   getExtendedDescription,
